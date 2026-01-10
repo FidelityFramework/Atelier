@@ -92,6 +92,7 @@ See the [docs/](./docs/) folder for detailed documentation:
 - [04_multi_webview.md](./docs/04_multi_webview.md) - Multi-WebView architecture
 - [05_webgpu.md](./docs/05_webgpu.md) - WebGPU compute integration
 - [06_partas_solid.md](./docs/06_partas_solid.md) - Partas.Solid: F# to SolidJS compilation
+- [07_lezer_parsing.md](./docs/07_lezer_parsing.md) - Lezer: CodeMirror's incremental parsing foundation
 
 ## Building
 
