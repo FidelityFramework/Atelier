@@ -45,11 +45,11 @@ function Counter() {
 }
 ```
 
-## Why Partas.Solid Matters for WRENEdit
+## Shared Types Across Compilation Targets
 
-### 1. Type Safety Across the Stack
+### Type Flow Example
 
-With Partas.Solid, the same F# types flow from backend to frontend:
+The same F# types compile to both targets:
 
 ```fsharp
 // Shared types (used by both native backend and WebView frontend)
@@ -69,11 +69,11 @@ type PSGNode = {
     IsReachable: bool
 }
 
-// Backend (F# Native)
+// Backend (F# Native via Firefly)
 let sendDiagnostics (webview: WebViewHandle) (diagnostics: Diagnostic[]) =
     WREN.send webview "diagnostics" diagnostics
 
-// Frontend (F# via Partas.Solid)
+// Frontend (F# via Fable + Partas.Solid)
 let DiagnosticsList () =
     let diagnostics, setDiagnostics = createSignal<Diagnostic[]> [||]
 
@@ -90,9 +90,9 @@ let DiagnosticsList () =
     ]
 ```
 
-No JSON schema definitions. No manual serialization. No runtime type errors from mismatched shapes.
+The `Diagnostic` type is defined once. Firefly compiles it to a native struct. Fable compiles it to a JavaScript object. BAREWire handles serialization at the boundary.
 
-### 2. SolidJS Reactive Primitives in F#
+### SolidJS Reactive Primitives
 
 Partas.Solid exposes SolidJS's fine-grained reactivity:
 
@@ -114,7 +114,7 @@ let userData = createResource userId (fun id ->
 )
 ```
 
-### 3. Component Model
+### Component Model
 
 ```fsharp
 // Components are just functions
@@ -130,7 +130,7 @@ let Button (props: {| onClick: unit -> unit; children: Node |}) =
 Button {| onClick = (fun () -> save()); children = text "Save" |}
 ```
 
-### 4. Control Flow Components
+### Control Flow Components
 
 SolidJS's control flow components are available:
 
@@ -232,7 +232,7 @@ let create (initialValue: string) (onChange: string -> unit) =
 │  │  Bindings   │ │  Bindings   │ │  Bindings   │          │
 │  └─────────────┘ └─────────────┘ └─────────────┘          │
 ├─────────────────────────────────────────────────────────────┤
-│  Partas.Solid                                  ◄── CRITICAL │
+│  Partas.Solid                                               │
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │  createSignal, createEffect, createMemo, For, Show...  ││
 │  │  JSX-like element constructors, event handling         ││
@@ -250,7 +250,7 @@ let create (initialValue: string) (onChange: string -> unit) =
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Partas.Solid is the bridge** between F# and SolidJS. Without it, every layer above it would need to be written in JavaScript/TypeScript.
+Partas.Solid maps F# constructs to SolidJS primitives. The layers above it (library bindings, application code) are written in F# and compiled through this stack.
 
 ## Build Pipeline
 
@@ -289,17 +289,15 @@ You could write raw Fable bindings to SolidJS, but Partas.Solid provides:
 
 ## Summary
 
-Partas.Solid is not a "nice to have" - it's the **load-bearing infrastructure** that enables:
+Partas.Solid provides:
 
-| Capability | Enabled By Partas.Solid |
-|------------|------------------------|
-| F# frontend code | SolidJS bindings |
-| Type-safe UI | F# type system + Fable |
-| Shared types (backend/frontend) | Same F# types compile to both targets |
+| Capability | Mechanism |
+|------------|-----------|
+| F# frontend code | SolidJS bindings via Fable |
+| Type-safe UI | F# type system preserved through compilation |
+| Shared types | Same F# types compile to native (Firefly) and JS (Fable) |
 | Fine-grained reactivity | SolidJS primitive bindings |
-| Library integration | Foundation for binding solid-codemirror, etc. |
-
-Without Partas.Solid, there is no "F# all the way down." The WREN Stack vision depends on it.
+| Library integration | Foundation for solid-codemirror, solid-dockview bindings |
 
 ## References
 
