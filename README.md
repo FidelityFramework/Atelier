@@ -1,6 +1,6 @@
 # WRENEdit
 
-**A Bespoke Editor for the Fidelity Ecosystem**
+**A Speculative Design for a Dedicated Editor to support the Fidelity Ecosystem**
 
 WRENEdit is a native code editor built on the WREN Stack (WebView + Reactive + Embedded + Native), designed specifically for F# Native development with the Fidelity framework.
 
