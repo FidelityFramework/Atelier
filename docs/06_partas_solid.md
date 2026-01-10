@@ -1,16 +1,10 @@
-# 06 - Partas.Solid: The Critical Infrastructure
+# 06 - Partas.Solid: F# to SolidJS Compilation
 
-## The Missing Piece
+## Role in the Stack
 
-Every other document in this series assumes you can write SolidJS code in F#. That assumption rests entirely on **Partas.Solid**.
+Partas.Solid provides F# bindings for SolidJS, compiled through Fable. This enables the same F# types to be used in both the native backend (compiled by Firefly) and the WebView frontend (compiled by Fable to JavaScript).
 
-Without Partas.Solid, the WREN Stack would require:
-- TypeScript/JavaScript for the WebView frontend
-- Context switching between F# (backend) and TypeScript (frontend)
-- Loss of type safety at the IPC boundary
-- Two mental models, two build systems, two ecosystems
-
-Partas.Solid eliminates this fragmentation. **F# all the way down.**
+The architectural benefit: a single type definition flows through both compilation targets, eliminating serialization mismatches at the IPC boundary.
 
 ## What is Partas.Solid?
 

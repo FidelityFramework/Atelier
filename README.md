@@ -63,7 +63,7 @@ WRENEdit takes a different path: **a lean, native foundation with a reactive web
 ## Technology Stack
 
 ### Frontend (WebView)
-- **[Partas.Solid](https://github.com/Partas/Partas.Solid)** - **THE CRITICAL PIECE** - F# bindings for SolidJS via Fable. This enables "F# all the way down" - the entire frontend is written in F#, not TypeScript.
+- **[Partas.Solid](https://github.com/Partas/Partas.Solid)** - F# bindings for SolidJS via Fable. Shared types compile to both native backend and JavaScript frontend.
 - **SolidJS** - Fine-grained reactivity, components run once
 - **CodeMirror 6** - Modern editor with Lezer parsing, LSP support
 - **solid-dockview** - VS Code-style panel docking with floating windows
@@ -91,7 +91,7 @@ See the [docs/](./docs/) folder for detailed documentation:
 - [03_unique_features.md](./docs/03_unique_features.md) - Delimited continuations, PSG visualization
 - [04_multi_webview.md](./docs/04_multi_webview.md) - Multi-WebView architecture
 - [05_webgpu.md](./docs/05_webgpu.md) - WebGPU compute integration
-- [06_partas_solid.md](./docs/06_partas_solid.md) - **Partas.Solid: The critical infrastructure**
+- [06_partas_solid.md](./docs/06_partas_solid.md) - Partas.Solid: F# to SolidJS compilation
 
 ## Building
 
