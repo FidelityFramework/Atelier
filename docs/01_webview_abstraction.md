@@ -2,7 +2,7 @@
 
 ## WRY Overview
 
-[WRY](https://github.com/tauri-apps/wry) (WebView Rendering librarY) is the Rust library that powers Tauri's cross-platform WebView support. Studying WRY's architecture provides valuable lessons for Atelier's F# Native implementation.
+[WRY](https://github.com/tauri-apps/wry) (WebView Rendering librarY) is the Rust library that powers Tauri's cross-platform WebView support. Studying WRY's architecture provides valuable lessons for Atelier's planned F# Native implementation.
 
 ## WRY's Abstraction Strategy
 
@@ -48,15 +48,15 @@ mod webview2;
 pub use webview2::*;
 ```
 
-Each platform module exports the same public API, but the implementations differ. This is **structural polymorphism** - the types have the same shape without sharing a base type.
+Each platform module exports the same public API, but the implementations differ. This is **structural polymorphism**: the types share the same shape without sharing a base type. Atelier looks toward adopting this pattern.
 
 ### Why No Trait?
 
-1. **Compile-time resolution** - Only one platform's code is compiled
-2. **No vtable overhead** - Direct calls, no dynamic dispatch
-3. **Platform-specific extensions** - Each platform can expose unique features
+1. **Compile-time resolution**: Only one platform's code is compiled
+2. **No vtable overhead**: Direct calls, no dynamic dispatch
+3. **Platform-specific extensions**: Each platform can expose unique features
 
-## F# Native Adaptation
+## Proposed F# Native Adaptation
 
 ### Option 1: Discriminated Union (Runtime Selection)
 
@@ -96,9 +96,9 @@ let executeScript handle script = platformExecuteScript handle script
 **Pros**: No dead code, no match overhead, platform-specific features
 **Cons**: Separate builds per platform
 
-### Recommendation: Hybrid Approach
+### Recommended Approach: Hybrid
 
-For Atelier, use conditional compilation for the core WebView operations, but allow runtime detection for cross-platform development scenarios:
+For Atelier, the current thinking favors conditional compilation for the core WebView operations, while allowing runtime detection for cross-platform development scenarios:
 
 ```fsharp
 module WebView =
@@ -117,6 +117,8 @@ module WebView =
 ```
 
 ## Platform-Specific Patterns from WRY
+
+The following examples illustrate how Atelier could adapt WRY's patterns for F# Native.
 
 ### WebKitGTK (Linux)
 
@@ -239,7 +241,7 @@ let webMessageHandler sender args =
 
 ### Unified Message Handler
 
-Despite platform differences, WRY normalizes the IPC interface:
+Despite platform differences, WRY normalizes the IPC interface. Atelier aspires to follow this pattern:
 
 ```fsharp
 type MessageHandler = {
@@ -294,7 +296,7 @@ window.__wrendit_receive = (base64Data) => {
 
 ## Custom Protocol Handlers
 
-WRY supports custom URL protocols for loading local resources:
+WRY supports custom URL protocols for loading local resources. Atelier plans to leverage similar mechanisms:
 
 ```fsharp
 // Register wrendit:// protocol
@@ -318,18 +320,20 @@ module CustomProtocol =
         #endif
 ```
 
-This allows the frontend to load resources via `wrendit://app/index.html` without file:// security restrictions.
+This would allow the frontend to load resources via `wrendit://app/index.html` without file:// security restrictions.
 
 ## Key Takeaways from WRY
 
-1. **Conditional compilation over runtime polymorphism** - Compile only what you need
-2. **Structural polymorphism** - Same API shape, different implementations
-3. **Unified IPC abstraction** - Hide platform message handler differences
-4. **Custom protocols** - Secure resource loading without file:// issues
-5. **Script evaluation with callbacks** - Bidirectional async communication
-6. **DevTools toggle** - Essential for development
+The following principles inform Atelier's intended design:
 
-## Next Steps
+1. **Conditional compilation over runtime polymorphism**: Compile only what's needed
+2. **Structural polymorphism**: Same API shape, different implementations
+3. **Unified IPC abstraction**: Hide platform message handler differences
+4. **Custom protocols**: Secure resource loading without file:// issues
+5. **Script evaluation with callbacks**: Bidirectional async communication
+6. **DevTools toggle**: Essential for development
 
-- [02_solid_components.md](./02_solid_components.md) - CodeMirror and Dockview bindings
-- [04_multi_webview.md](./04_multi_webview.md) - Multiple WebView architecture
+## Navigation
+
+- Previous: [00_architecture.md](./00_architecture.md): WREN architecture deep dive
+- Next: [02_solid_components.md](./02_solid_components.md): CodeMirror and Dockview bindings

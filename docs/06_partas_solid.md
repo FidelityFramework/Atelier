@@ -2,9 +2,9 @@
 
 ## Role in the Stack
 
-Partas.Solid provides F# bindings for SolidJS, compiled through Fable. This enables the same F# types to be used in both the native backend (compiled by Firefly) and the WebView frontend (compiled by Fable to JavaScript).
+Partas.Solid provides F# bindings for SolidJS, compiled through Fable. Atelier plans to leverage this to enable the same F# types in both the native backend (compiled by Firefly) and the WebView frontend (compiled by Fable to JavaScript).
 
-The architectural benefit: a single type definition flows through both compilation targets, eliminating serialization mismatches at the IPC boundary.
+The architectural benefit: a single type definition could flow through both compilation targets, eliminating serialization mismatches at the IPC boundary.
 
 ## What is Partas.Solid?
 
@@ -155,13 +155,15 @@ Switch [
 
 ## Binding External Libraries
 
-Partas.Solid provides the foundation, but Atelier needs bindings for:
+Partas.Solid provides the foundation, but Atelier envisions bindings for:
 - solid-codemirror
 - solid-dockview
 - xterm.js
 - D3.js
 
 ### Binding Pattern
+
+The following illustrates how library bindings might be structured:
 
 ```fsharp
 // Fable binding for solid-codemirror
@@ -215,7 +217,7 @@ let create (initialValue: string) (onChange: string -> unit) =
         div [ ref result.ref; class' "editor-container" ] []
 ```
 
-## The Atelier Frontend Stack
+## The Envisioned Atelier Frontend Stack
 
 ```mermaid
 flowchart TB
@@ -247,9 +249,9 @@ flowchart TB
     appcode --> bindings --> partas --> fable --> solid
 ```
 
-Partas.Solid maps F# constructs to SolidJS primitives. The layers above it (library bindings, application code) are written in F# and compiled through this stack.
+Partas.Solid maps F# constructs to SolidJS primitives. The layers above it (library bindings, application code) are intended to be written in F# and compiled through this stack.
 
-## Build Pipeline
+## Anticipated Build Pipeline
 
 ```bash
 # Frontend build
@@ -264,7 +266,7 @@ npx vite build
 # Output: dist/app.js (SolidJS application)
 ```
 
-The F# source files are transformed by Fable into JavaScript that imports from `solid-js`. The Partas.Solid library provides the types and functions that map to SolidJS's API.
+The F# source files are transformed by Fable into JavaScript that imports from `solid-js`. The Partas.Solid library provides the types and functions that map to SolidJS's API. This pipeline represents our intended approach.
 
 ## Why Not Other Options?
 
@@ -284,9 +286,14 @@ You could write raw Fable bindings to SolidJS, but Partas.Solid provides:
 - Proper handling of SolidJS's reactive primitives
 - Community maintenance and updates
 
+## Navigation
+
+- Previous: [05_webgpu.md](./05_webgpu.md): WebGPU compute integration
+- Next: [07_lezer_parsing.md](./07_lezer_parsing.md): Lezer, CodeMirror's incremental parsing foundation
+
 ## Summary
 
-Partas.Solid provides:
+Partas.Solid offers:
 
 | Capability | Mechanism |
 |------------|-----------|
@@ -299,5 +306,5 @@ Partas.Solid provides:
 ## References
 
 - [Partas.Solid GitHub](https://github.com/Partas/Partas.Solid)
-- [Fable](https://fable.io/) - F# to JavaScript compiler
-- [SolidJS](https://www.solidjs.com/) - Reactive UI library
+- [Fable](https://fable.io/): F# to JavaScript compiler
+- [SolidJS](https://www.solidjs.com/): Reactive UI library

@@ -2,12 +2,12 @@
 
 ## Overview
 
-Atelier's frontend is built on two remarkable SolidJS libraries:
+Atelier's frontend is planned to be built on two remarkable SolidJS libraries:
 
-- **solid-codemirror** - CodeMirror 6 wrapper with reactive integration
-- **solid-dockview** - VS Code-style docking panel system
+- **solid-codemirror**: CodeMirror 6 wrapper with reactive integration
+- **solid-dockview**: VS Code-style docking panel system
 
-Both integrate seamlessly with SolidJS's fine-grained reactivity model and will be exposed to F# via Partas.Solid bindings.
+Both integrate seamlessly with SolidJS's fine-grained reactivity model and would be exposed to F# via Partas.Solid bindings.
 
 ## CodeMirror 6: The Editor Foundation
 
@@ -24,7 +24,7 @@ CodeMirror 6 is a complete rewrite of the CodeMirror editor, built with modern p
 | Accessibility | Good | Excellent |
 | Language support | ~50 via TextMate | 20+ via Lezer + TextMate |
 
-For Atelier's multi-pane architecture with potentially many editor instances, CodeMirror 6's lightweight footprint is essential.
+For Atelier's planned multi-pane architecture with potentially many editor instances, CodeMirror 6's lightweight footprint would be essential.
 
 ### CodeMirror 6 Architecture
 
@@ -73,11 +73,13 @@ function Editor() {
 
 **Key Features:**
 
-1. **Compartments** - Dynamic extension reconfiguration without recreating the editor
-2. **Controlled value** - Two-way binding between SolidJS signals and editor content
-3. **Extension factory** - `createExtension` returns a reconfigure function
+1. **Compartments**: Dynamic extension reconfiguration without recreating the editor
+2. **Controlled value**: Two-way binding between SolidJS signals and editor content
+3. **Extension factory**: `createExtension` returns a reconfigure function
 
-### Partas.Solid Bindings for solid-codemirror
+### Proposed Partas.Solid Bindings for solid-codemirror
+
+The following illustrates how F# bindings might look:
 
 ```fsharp
 // Fable bindings for solid-codemirror
@@ -127,7 +129,7 @@ module Editor =
 
 ### CodeMirror 6 LSP Integration
 
-CodeMirror 6 supports LSP via `@codemirror/lsp-client`:
+CodeMirror 6 could support LSP via `@codemirror/lsp-client` or similar integration:
 
 ```typescript
 import { lspClient } from '@codemirror/lsp-client'
@@ -159,7 +161,7 @@ createCodeMirror({
 
 ### F# Language Support via Lezer
 
-CodeMirror uses [Lezer](https://lezer.codemirror.net/) for incremental parsing. While F# doesn't have an official Lezer grammar, we can:
+CodeMirror uses [Lezer](https://lezer.codemirror.net/) for incremental parsing. While F# doesn't have an official Lezer grammar, potential approaches include:
 
 1. **Use TextMate grammar** via `@codemirror/legacy-modes` (like VSCode)
 2. **Create Lezer grammar** for F# (better integration)
@@ -233,13 +235,13 @@ function IDE() {
 
 **Key Features:**
 
-1. **Drag-and-drop** - Panels can be dragged between groups
-2. **Floating windows** - Panels can float over the main layout
-3. **Popout windows** - Panels can be detached to separate OS windows
-4. **Layout serialization** - Save/restore layouts as JSON
-5. **Resize handles** - Flexible panel sizing
+1. **Drag-and-drop**: Panels can be dragged between groups
+2. **Floating windows**: Panels can float over the main layout
+3. **Popout windows**: Panels can be detached to separate OS windows
+4. **Layout serialization**: Save/restore layouts as JSON
+5. **Resize handles**: Flexible panel sizing
 
-### Partas.Solid Bindings for solid-dockview
+### Proposed Partas.Solid Bindings for solid-dockview
 
 ```fsharp
 // Fable bindings for solid-dockview
@@ -314,7 +316,7 @@ module Dockview =
 
 ### Layout Persistence
 
-Dockview supports serializing layouts:
+Dockview supports serializing layouts, which Atelier could leverage:
 
 ```fsharp
 module Layout =
@@ -346,6 +348,8 @@ module Layout =
 ```
 
 ## Integrating CodeMirror with Dockview
+
+The following examples illustrate how these components might be combined in Atelier.
 
 ### Editor Panel Component
 
@@ -458,16 +462,16 @@ While DaisyUI doesn't provide docking panels (that's Dockview's job), it provide
 
 ## Summary
 
-The combination of solid-codemirror and solid-dockview provides:
+The combination of solid-codemirror and solid-dockview would provide:
 
-1. **Professional editor** - CodeMirror 6 with full LSP support
-2. **Flexible layout** - VS Code-style docking with floating/popout windows
-3. **SolidJS integration** - Fine-grained reactivity, components run once
-4. **F# bindings** - Partas.Solid enables type-safe F# development
+1. **Professional editor**: CodeMirror 6 with full LSP support
+2. **Flexible layout**: VS Code-style docking with floating/popout windows
+3. **SolidJS integration**: Fine-grained reactivity, components run once
+4. **F# bindings**: Partas.Solid enables type-safe F# development
 
-This foundation enables Atelier to rival VSCode's UX while maintaining the lean WREN Stack architecture.
+This foundation aims to enable Atelier to rival VSCode's UX while maintaining the lean WREN Stack architecture.
 
-## Next Steps
+## Navigation
 
-- [03_unique_features.md](./03_unique_features.md) - Delimited continuations debugging, PSG visualization
-- [04_multi_webview.md](./04_multi_webview.md) - Multi-WebView architecture
+- Previous: [01_webview_abstraction.md](./01_webview_abstraction.md): Platform WebView lessons from WRY
+- Next: [03_unique_features.md](./03_unique_features.md): Delimited continuations debugging, PSG visualization

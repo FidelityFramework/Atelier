@@ -4,7 +4,7 @@
 
 **W**ebView + **R**eactive + **E**mbedded + **N**ative
 
-WREN represents a fundamental rethinking of desktop application architecture. Rather than embedding a full browser runtime (Electron) or constraining ourselves to native-only UI toolkits (GTK widgets, Qt), WREN leverages the platform's existing WebView infrastructure with a native F# backend.
+WREN represents a fundamental rethinking of desktop application architecture. Rather than embedding a full browser runtime (Electron) or constraining ourselves to native-only UI toolkits (GTK widgets, Qt), WREN looks toward leveraging the platform's existing WebView infrastructure with a native F# backend.
 
 ## Why WREN?
 
@@ -25,13 +25,13 @@ Every modern operating system ships with a WebView component:
 - **macOS**: WKWebView (WebKit)
 - **Windows**: WebView2 (Chromium-based, ships with Windows 11, downloadable for 10)
 
-These WebViews are already present, already maintained, and already consuming memory for other applications. WREN uses them directly, avoiding the Electron tax while gaining web UI capabilities.
+These WebViews are already present, already maintained, and already consuming memory for other applications. WREN aspires to use them directly, avoiding the Electron tax while gaining web UI capabilities.
 
 ## Architecture Layers
 
 ### Layer 1: Platform WebView
 
-The lowest layer provides raw WebView access:
+The lowest layer will provide raw WebView access:
 
 ```mermaid
 flowchart TB
@@ -59,7 +59,7 @@ Each platform provides these capabilities through different APIs, but the semant
 
 ### Layer 2: F# Native Abstraction
 
-Atelier abstracts platform differences using F# discriminated unions and conditional compilation:
+Atelier plans to abstract platform differences using F# discriminated unions and conditional compilation:
 
 ```fsharp
 type WebViewHandle =
@@ -87,7 +87,7 @@ let create config = WebView2 (webview2_create config)
 
 ### Layer 3: IPC Protocol (BAREWire)
 
-Communication between F# Native backend and WebView frontend uses BAREWire - a binary typed protocol:
+Communication between F# Native backend and WebView frontend is intended to use BAREWire, a binary typed protocol:
 
 ```mermaid
 flowchart LR
@@ -111,14 +111,14 @@ Why not JSON?
 - No type safety (runtime errors)
 - Verbose encoding (strings for everything)
 
-BAREWire provides:
+BAREWire aims to provide:
 - Zero-copy deserialization where possible
 - Compile-time type checking
 - Minimal wire format
 
 ### Layer 4: Reactive Frontend (SolidJS)
 
-The WebView runs a SolidJS application with fine-grained reactivity:
+The WebView is designed to run a SolidJS application with fine-grained reactivity:
 
 ```typescript
 // SolidJS - components run ONCE, only signals update
@@ -141,7 +141,7 @@ This is fundamentally different from React's re-render model:
 - **React**: Component functions re-execute on every state change
 - **SolidJS**: Component functions run once; signal reads are tracked and update surgically
 
-For an editor that receives thousands of updates per second (keystrokes, LSP responses, debug events), this efficiency matters.
+For an editor that anticipates thousands of updates per second (keystrokes, LSP responses, debug events), this efficiency becomes essential.
 
 ## Data Flow
 
@@ -161,7 +161,7 @@ flowchart TB
 
 ## Memory Model
 
-Atelier's memory footprint:
+Atelier's projected memory footprint:
 
 | Component | Approximate Size |
 |-----------|-----------------|
@@ -179,7 +179,7 @@ Compare to:
 
 ## Thread Model
 
-The multi-WebView architecture enables true thread isolation:
+The multi-WebView architecture aims to enable true thread isolation:
 
 ```mermaid
 flowchart TB
@@ -198,9 +198,9 @@ flowchart TB
     build --> buildwv
 ```
 
-Each WebView runs in its own process (WebKit/Chromium architecture). Heavy operations (debugging, build monitoring) cannot freeze the editor UI.
+Each WebView runs in its own process (WebKit/Chromium architecture). This means heavy operations (debugging, build monitoring) should not freeze the editor UI.
 
-## Next Steps
+## Navigation
 
-- [01_webview_abstraction.md](./01_webview_abstraction.md) - Platform abstraction patterns from WRY
-- [02_solid_components.md](./02_solid_components.md) - CodeMirror and Dockview integration
+- Previous: [README](../README.md)
+- Next: [01_webview_abstraction.md](./01_webview_abstraction.md): Platform abstraction patterns from WRY

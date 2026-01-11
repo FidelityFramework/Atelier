@@ -2,7 +2,7 @@
 
 ## The Opportunity
 
-VSCode and NeoVim are general-purpose editors. They excel at breadth but cannot provide depth for specialized domains. Atelier, built specifically for the Fidelity ecosystem, can offer capabilities that general editors fundamentally cannot.
+VSCode and NeoVim are general-purpose editors. They excel at breadth but cannot provide depth for specialized domains. Atelier, designed specifically for the Fidelity ecosystem, aspires to offer capabilities that general editors fundamentally cannot.
 
 ## Feature 1: Delimited Continuation Debugging
 
@@ -46,9 +46,9 @@ let handler = effect {
 }
 ```
 
-### Atelier's Continuation Inspector
+### Atelier's Planned Continuation Inspector
 
-Atelier provides specialized debugging for delimited continuations:
+Atelier aims to provide specialized debugging for delimited continuations:
 
 ```mermaid
 flowchart TB
@@ -80,7 +80,7 @@ flowchart TB
     end
 ```
 
-### Implementation Architecture
+### Proposed Implementation Architecture
 
 ```fsharp
 // Native debug engine integration
@@ -116,19 +116,19 @@ WREN.subscribe "debug_event" (function
 )
 ```
 
-### Why This Matters
+### Why This Would Matter
 
 No existing debugger provides this capability because:
 
-1. **Traditional runtimes don't have delimited continuations** - .NET, JVM, V8 don't expose continuation primitives
-2. **Stack-based mental models are embedded** - Debugger UIs assume call stacks
-3. **General editors can't integrate deeply** - VSCode's DAP assumes traditional debugging
+1. **Traditional runtimes don't have delimited continuations**: .NET, JVM, V8 don't expose continuation primitives
+2. **Stack-based mental models are embedded**: Debugger UIs assume call stacks
+3. **General editors can't integrate deeply**: VSCode's DAP assumes traditional debugging
 
-Atelier, built for Fidelity:
-- Understands continuation semantics natively
-- Visualizes non-linear control flow
-- Tracks continuation lifecycle (creation → suspension → invocation → completion)
-- Shows captured closures explicitly
+Atelier, designed for Fidelity, would:
+- Understand continuation semantics natively
+- Visualize non-linear control flow
+- Track continuation lifecycle (creation → suspension → invocation → completion)
+- Show captured closures explicitly
 
 ## Feature 2: PSG Visualization with D3
 
@@ -147,7 +147,7 @@ The PSG captures:
 - Reachability information
 - SRTP resolutions
 
-### Interactive PSG Viewer
+### Envisioned PSG Viewer
 
 ```mermaid
 flowchart TB
@@ -233,7 +233,7 @@ function renderPSG(container: HTMLElement, nodes: PSGNode[], edges: PSGEdge[]) {
 
 ### Bidirectional Navigation
 
-The PSG Viewer enables bidirectional navigation:
+The PSG Viewer would enable bidirectional navigation:
 
 ```mermaid
 flowchart LR
@@ -250,7 +250,7 @@ flowchart LR
     source <-->|bidirectional navigation| psg
 ```
 
-Clicking a node highlights the corresponding source. Clicking source highlights the corresponding node.
+Clicking a node would highlight the corresponding source. Clicking source would highlight the corresponding node.
 
 ```fsharp
 // Source → PSG navigation
@@ -268,7 +268,7 @@ WREN.onMessage "psg_node_selected" (fun nodeId ->
 
 ### Phase Comparison
 
-The PSG evolves through nanopass phases. The viewer allows comparing phases:
+The PSG evolves through nanopass phases. The viewer would allow comparing phases:
 
 ```mermaid
 flowchart TB
@@ -297,7 +297,7 @@ Switching phases shows how the PSG gains information:
 
 ### Seeing the Full Picture
 
-Atelier can display the entire compilation pipeline for a selection:
+Atelier envisions displaying the entire compilation pipeline for a selection:
 
 ```mermaid
 flowchart TB
@@ -312,7 +312,7 @@ flowchart TB
     end
 ```
 
-This allows developers to:
+This would allow developers to:
 - Understand how F# maps to native code
 - Debug code generation issues
 - Learn compiler internals
@@ -322,7 +322,7 @@ This allows developers to:
 
 ### Visualizing Effects
 
-Fidelity's effect system tracks computational effects:
+Fidelity's effect system is designed to track computational effects:
 
 ```fsharp
 // Effect-annotated code
@@ -341,7 +341,7 @@ let loadConfig path =
 // Inferred effect: IO + Parse + Validation
 ```
 
-Atelier displays effect annotations inline:
+Atelier would display effect annotations inline:
 
 ```mermaid
 flowchart LR
@@ -363,7 +363,7 @@ flowchart LR
 
 ### Effect Mismatch Diagnostics
 
-When effects don't compose correctly:
+When effects don't compose correctly, diagnostics could appear as:
 
 ```mermaid
 flowchart TB
@@ -379,7 +379,7 @@ flowchart TB
 
 ## Summary
 
-Atelier's unique features arise from deep integration with the Fidelity ecosystem:
+Atelier's unique features would arise from deep integration with the Fidelity ecosystem:
 
 | Feature | Enabled By |
 |---------|-----------|
@@ -388,9 +388,9 @@ Atelier's unique features arise from deep integration with the Fidelity ecosyste
 | Pipeline inspection | Integration with all compilation phases |
 | Effect awareness | FNCS effect system |
 
-These capabilities are impossible in general-purpose editors because they require knowledge of specific compiler internals that only purpose-built tooling can provide.
+These capabilities would be difficult or impossible in general-purpose editors because they require knowledge of specific compiler internals that only purpose-built tooling can provide.
 
-## Next Steps
+## Navigation
 
-- [04_multi_webview.md](./04_multi_webview.md) - Multi-WebView architecture
-- [05_webgpu.md](./05_webgpu.md) - WebGPU compute integration
+- Previous: [02_solid_components.md](./02_solid_components.md): CodeMirror and Dockview bindings
+- Next: [04_multi_webview.md](./04_multi_webview.md): Multi-WebView architecture

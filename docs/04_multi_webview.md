@@ -18,14 +18,14 @@ flowchart TB
 
 **Problems:**
 
-1. **Single JavaScript thread** - Heavy operations block the entire UI
-2. **Shared memory space** - Memory leaks in one component affect everything
-3. **No isolation** - A crash in the debugger crashes the editor
-4. **Limited parallelism** - Web Workers help but have communication overhead
+1. **Single JavaScript thread**: Heavy operations block the entire UI
+2. **Shared memory space**: Memory leaks in one component affect everything
+3. **No isolation**: A crash in the debugger crashes the editor
+4. **Limited parallelism**: Web Workers help but have communication overhead
 
 ## The Multi-WebView Solution
 
-Atelier uses multiple WebView instances, each running in its own process:
+Atelier is designed to use multiple WebView instances, each running in its own process:
 
 ```mermaid
 flowchart TB
@@ -47,17 +47,17 @@ flowchart TB
 
 **Benefits:**
 
-1. **Process isolation** - Each WebView runs in its own OS process
-2. **True parallelism** - Multiple JavaScript engines run simultaneously
-3. **Crash isolation** - A WebView crash doesn't take down others
-4. **Memory isolation** - Each WebView has its own heap
-5. **Security** - Compromised WebView can't access others' memory
+1. **Process isolation**: Each WebView runs in its own OS process
+2. **True parallelism**: Multiple JavaScript engines run simultaneously
+3. **Crash isolation**: A WebView crash doesn't take down others
+4. **Memory isolation**: Each WebView has its own heap
+5. **Security**: Compromised WebView can't access others' memory
 
-## WebView Roles
+## Proposed WebView Roles
 
 ### Primary WebView: Editor
 
-The main editor WebView handles:
+The main editor WebView would handle:
 - Code editing (CodeMirror)
 - Panel docking (Dockview)
 - File tree
@@ -198,7 +198,7 @@ let createTerminalWebView () =
 
 ### Central Coordinator
 
-The F# Native backend coordinates all WebViews:
+The F# Native backend would coordinate all WebViews:
 
 ```fsharp
 type AtelierApp = {
@@ -249,7 +249,7 @@ module Coordinator =
 
 ### Cross-WebView Communication
 
-WebViews communicate through the native coordinator:
+WebViews would communicate through the native coordinator:
 
 ```mermaid
 flowchart TB
@@ -301,7 +301,7 @@ let handleEditorMessage (msg: Message) =
 
 ### Event Broadcasting
 
-Some events should reach all WebViews:
+Some events would need to reach all WebViews:
 
 ```fsharp
 let broadcast eventType payload =
@@ -319,7 +319,7 @@ let changeTheme theme =
 
 ### Lazy Creation
 
-WebViews are created on demand:
+WebViews would be created on demand:
 
 ```fsharp
 // User clicks "Debug" button
@@ -380,7 +380,7 @@ monitorWebView debugWebView.Handle (fun _ _ ->
 
 ### IPC Overhead
 
-Multiple WebViews mean more IPC. Minimize overhead:
+Multiple WebViews mean more IPC. The design would minimize overhead:
 
 ```fsharp
 // BAD: Sending every keystroke
@@ -429,7 +429,7 @@ let compilationComplete psg diagnostics =
 
 ### Floating WebViews
 
-WebViews can be floating windows:
+WebViews could be floating windows:
 
 ```fsharp
 let createFloatingWebView title content =
@@ -449,7 +449,7 @@ let createFloatingWebView title content =
 
 ### Multi-Monitor Support
 
-Dockview's popout feature combined with separate WebViews enables true multi-monitor:
+Dockview's popout feature combined with separate WebViews would enable true multi-monitor:
 
 ```mermaid
 flowchart LR
@@ -477,7 +477,7 @@ flowchart LR
 
 ## Summary
 
-Multi-WebView architecture provides:
+The multi-WebView architecture would provide:
 
 | Benefit | Mechanism |
 |---------|-----------|
@@ -488,8 +488,9 @@ Multi-WebView architecture provides:
 | Flexibility | On-demand WebView creation |
 | Multi-monitor | True separate windows |
 
-The F# Native coordinator manages lifecycle, routing, and state synchronization, enabling the benefits of multiple processes without the complexity leaking into the frontend code.
+The F# Native coordinator would manage lifecycle, routing, and state synchronization, enabling the benefits of multiple processes without the complexity leaking into the frontend code.
 
-## Next Steps
+## Navigation
 
-- [05_webgpu.md](./05_webgpu.md) - WebGPU compute integration
+- Previous: [03_unique_features.md](./03_unique_features.md): Delimited continuations, PSG visualization
+- Next: [05_webgpu.md](./05_webgpu.md): WebGPU compute integration

@@ -13,7 +13,7 @@ flowchart TB
     partas --> solidcm --> cmlang --> lezerlr --> lezercommon
 ```
 
-Understanding Lezer is necessary for:
+Understanding Lezer is relevant for Atelier's planned features:
 - Writing language support for F#
 - Interpreting syntax trees for features like code folding
 - Debugging highlighting issues
@@ -23,7 +23,7 @@ Understanding Lezer is necessary for:
 
 Lezer is an incremental LR parser generator. It compiles grammar files to compact parse tables (JavaScript modules), which the runtime uses to produce concrete syntax trees.
 
-Key distinction from traditional parsers: Lezer builds a **concrete syntax tree** (CST), not an abstract syntax tree (AST). The tree preserves all tokens, positions, and structure - what you need for editor features. Semantic analysis comes from the LSP.
+Key distinction from traditional parsers: Lezer builds a **concrete syntax tree** (CST), not an abstract syntax tree (AST). The tree preserves all tokens, positions, and structure, which is what you need for editor features. Semantic analysis comes from the LSP.
 
 ## Incremental Parsing
 
@@ -130,7 +130,7 @@ flowchart LR
 
 Two interfaces for traversal:
 
-**SyntaxNode** - Object-based, convenient:
+**SyntaxNode** (object-based, convenient):
 ```javascript
 let node = tree.topNode
 console.log(node.name, node.from, node.to)
@@ -139,7 +139,7 @@ for (let child of node.children) {
 }
 ```
 
-**TreeCursor** - Mutable, efficient for bulk traversal:
+**TreeCursor** (mutable, efficient for bulk traversal):
 ```javascript
 let cursor = tree.cursor()
 do {
@@ -147,7 +147,7 @@ do {
 } while (cursor.next())
 ```
 
-TreeCursor avoids object allocation during traversal - relevant for large files.
+TreeCursor avoids object allocation during traversal, which is relevant for large files.
 
 ## Error Recovery
 
@@ -162,7 +162,7 @@ Lezer uses GLR (Generalized LR) parsing for error recovery. When encountering in
 4. Prune branches exceeding threshold relative to best branch
 5. Continue with surviving branches
 
-This produces usable trees from partial/invalid code - essential for editing.
+This produces usable trees from partial/invalid code, which is essential for editing.
 
 ## External Tokenizers
 
@@ -184,14 +184,16 @@ F#'s significant whitespace would require this approach.
 
 ## F# Language Support Options
 
+The following outlines potential approaches for F# support in Atelier.
+
 ### Option 1: Full Lezer Grammar
 
-Write a complete grammar for F#. Challenges:
+Write a complete grammar for F#. Challenges include:
 
-- **Significant whitespace** - Requires external tokenizer with indentation tracking
-- **Computation expressions** - Context-dependent keywords (`let!`, `do!`, `return!`)
-- **Type syntax** - Generic constraints, SRTPs, measure types
-- **Preprocessor directives** - `#if`, `#else`, conditional compilation
+- **Significant whitespace**: Requires external tokenizer with indentation tracking
+- **Computation expressions**: Context-dependent keywords (`let!`, `do!`, `return!`)
+- **Type syntax**: Generic constraints, SRTPs, measure types
+- **Preprocessor directives**: `#if`, `#else`, conditional compilation
 
 This is substantial work. OCaml has a [Lezer grammar](https://github.com/ocaml/tree-sitter-ocaml) (via Tree-sitter) that could inform an F# implementation.
 
@@ -226,15 +228,17 @@ This layers LSP intelligence over basic highlighting.
 
 ### Recommended Approach for Atelier
 
-1. **Start with TextMate** - Immediate basic highlighting
-2. **Add LSP semantic tokens** - FSNAC provides accurate highlighting
-3. **Consider Lezer grammar later** - If tree-based features (smart folding, structural navigation) prove valuable
+The current thinking favors a phased approach:
 
-The LSP already provides semantic understanding. A Lezer grammar would add local, offline tree access - useful but not essential for initial implementation.
+1. **Start with TextMate**: Immediate basic highlighting
+2. **Add LSP semantic tokens**: FSNAC provides accurate highlighting
+3. **Consider Lezer grammar later**: If tree-based features (smart folding, structural navigation) prove valuable
+
+The LSP already provides semantic understanding. A Lezer grammar could add local, offline tree access; useful but not essential for an initial implementation.
 
 ## CodeMirror Integration Points
 
-When wrapping CodeMirror in Partas.Solid, these Lezer-related APIs matter:
+When wrapping CodeMirror in Partas.Solid, these Lezer-related APIs become relevant:
 
 ```typescript
 // Language definition
@@ -257,7 +261,7 @@ const myExtension = EditorView.updateListener.of(update => {
 })
 ```
 
-F# bindings would expose these as:
+F# bindings could expose these as:
 
 ```fsharp
 module CodeMirror.Language
@@ -279,6 +283,11 @@ let defineLanguage (parser: Parser) (data: LanguageData) : LRLanguage =
 | Node lookup by position | O(log n) | Binary search in sorted nodes |
 
 For a 10,000-line file with a single character edit, incremental parsing typically touches <1% of nodes.
+
+## Navigation
+
+- Previous: [06_partas_solid.md](./06_partas_solid.md): Partas.Solid, F# to SolidJS compilation
+- Next: [08_tooling_integration.md](./08_tooling_integration.md): Performance Tooling Integration
 
 ## References
 

@@ -1,6 +1,6 @@
 # 08 - Performance Tooling Integration
 
-Atelier integrates with low-level performance tools to validate Fidelity's compile-time guarantees. This document describes both Atelier's native integration and the general patterns for other editors.
+Atelier aspires to integrate with low-level performance tools to validate Fidelity's compile-time guarantees. This document describes both Atelier's intended native integration and the general patterns for other editors.
 
 ## The Verification Challenge
 
@@ -47,11 +47,11 @@ flowchart TB
 
 ## Atelier Native Integration
 
-Atelier's multi-WebView architecture enables the richest integration:
+Atelier's multi-WebView architecture is designed to enable the richest integration:
 
 ### Verification Panel WebView
 
-A dedicated WebView for verification results:
+A dedicated WebView is envisioned for verification results:
 
 ```mermaid
 flowchart LR
@@ -104,7 +104,7 @@ module VerificationPanel =
 
 ### Inline Diagnostics
 
-Verification results appear as inline diagnostics in the editor:
+Verification results are intended to appear as inline diagnostics in the editor:
 
 ```fsharp
 // Partas.Solid component for inline diagnostic
@@ -126,7 +126,7 @@ let InlineDiagnostic (props: {| diagnostic: Diagnostic |}) =
 
 ### Cache Line Visualization
 
-For complex layouts, visualize cache line boundaries:
+For complex layouts, Atelier aims to visualize cache line boundaries:
 
 ```mermaid
 flowchart TB
@@ -426,6 +426,10 @@ fi
 | Intel (any OS) | VTune | Full |
 | macOS | Instruments | Partial (no HITM) |
 | Windows | VTune, WPA | Partial |
+
+## Navigation
+
+- Previous: [07_lezer_parsing.md](./07_lezer_parsing.md): Lezer, CodeMirror's incremental parsing foundation
 
 ## References
 

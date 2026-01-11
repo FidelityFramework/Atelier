@@ -11,9 +11,11 @@ This means WebGPU provides access to compute shaders, not just graphics.
 
 ## Why WebGPU in Atelier?
 
+Atelier looks toward WebGPU for performance-critical operations. The following use cases illustrate potential applications.
+
 ### Use Case 1: PSG Graph Layout
 
-Large PSGs can have thousands of nodes. Force-directed graph layout (D3's default) is O(n²) per iteration. GPU compute can parallelize this:
+Large PSGs can have thousands of nodes. Force-directed graph layout (D3's default) is O(n²) per iteration. GPU compute could parallelize this:
 
 ```wgsl
 // Force calculation compute shader
@@ -49,7 +51,7 @@ fn calculateForces(
 }
 ```
 
-**Performance comparison:**
+**Estimated performance comparison:**
 
 | Nodes | CPU (D3) | WebGPU |
 |-------|----------|--------|
@@ -59,7 +61,7 @@ fn calculateForces(
 
 ### Use Case 2: Syntax Highlighting
 
-Large files benefit from GPU-accelerated tokenization:
+Large files could benefit from GPU-accelerated tokenization:
 
 ```wgsl
 // Parallel tokenization
@@ -80,7 +82,7 @@ fn tokenize(
 }
 ```
 
-This is speculative execution - some tokens span multiple characters and need CPU fixup - but 90%+ of characters can be classified in parallel.
+This would be speculative execution; some tokens span multiple characters and need CPU fixup, but 90%+ of characters could be classified in parallel.
 
 ### Use Case 3: Fuzzy Matching
 
@@ -119,16 +121,16 @@ fn fuzzyScore(
 }
 ```
 
-Search 100,000 symbols in milliseconds.
+This could search 100,000 symbols in milliseconds.
 
 ### Use Case 4: Terminal Rendering
 
-xterm.js already uses WebGL for text rendering. WebGPU could further accelerate:
+xterm.js already uses WebGL for text rendering. WebGPU could potentially further accelerate:
 - Glyph rasterization
 - Scroll buffer management
 - Selection highlighting
 
-## WebGPU Architecture in Atelier
+## Proposed WebGPU Architecture in Atelier
 
 ### Device Acquisition
 
@@ -249,7 +251,7 @@ async function runLayoutIteration(
 
 ### IPC for Compute Requests
 
-The F# Native backend can request GPU computation:
+The F# Native backend could request GPU computation:
 
 ```fsharp
 // F# Native side
@@ -335,7 +337,7 @@ WebKitGTK, WKWebView, and WebView2 all inherit browser WebGPU support:
 
 ## Native GPU Alternative
 
-For maximum performance, Atelier could bypass WebGPU entirely and use native GPU APIs:
+As a future enhancement, Atelier could bypass WebGPU entirely and use native GPU APIs:
 
 ```fsharp
 // Native Vulkan/Metal compute
@@ -358,7 +360,7 @@ This is more complex but provides:
 - More control over memory
 - Access to full GPU capabilities
 
-For Atelier v1, WebGPU is sufficient. Native compute is a future optimization.
+For an initial release, WebGPU would likely be sufficient. Native compute remains a future optimization option.
 
 ## Practical Recommendations
 
@@ -391,7 +393,7 @@ This is significant additional complexity and should only be pursued if WebGPU b
 
 ## Summary
 
-WebGPU brings GPU compute to Atelier's WebViews:
+WebGPU could bring GPU compute to Atelier's WebViews:
 
 | Task | CPU Time | WebGPU Time | Speedup |
 |------|----------|-------------|---------|
@@ -399,9 +401,14 @@ WebGPU brings GPU compute to Atelier's WebViews:
 | Tokenize 100KB file | 50ms | 5ms | 10x |
 | Fuzzy match 100K symbols | 100ms | 10ms | 10x |
 
-The multi-WebView architecture naturally supports this - compute-heavy operations run in dedicated WebViews without blocking the editor.
+The multi-WebView architecture would naturally support this approach. Compute-heavy operations could run in dedicated WebViews without blocking the editor.
 
-WebGPU support varies by platform. Always provide CPU fallbacks. Consider native GPU APIs only if WebGPU proves insufficient.
+WebGPU support varies by platform. Any implementation should provide CPU fallbacks. Native GPU APIs would only be considered if WebGPU proves insufficient.
+
+## Navigation
+
+- Previous: [04_multi_webview.md](./04_multi_webview.md): Multi-WebView architecture
+- Next: [06_partas_solid.md](./06_partas_solid.md): Partas.Solid, F# to SolidJS compilation
 
 ## References
 
