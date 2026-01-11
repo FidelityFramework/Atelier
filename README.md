@@ -129,21 +129,6 @@ See the [docs/](./docs/) folder for detailed documentation:
 - [07_lezer_parsing.md](./docs/07_lezer_parsing.md): Lezer, CodeMirror's incremental parsing foundation
 - [08_tooling_integration.md](./docs/08_tooling_integration.md): Integration with the Fidelity toolchain
 
-## Building
-
-*Coming soon; requires Firefly compiler and WREN Stack infrastructure*
-
-```bash
-# Build the native backend
-firefly compile Atelier.fidproj
-
-# Build the frontend
-cd frontend && npm run build
-
-# Run
-./Atelier
-```
-
 ## Related Projects
 
 | Project | Description |
