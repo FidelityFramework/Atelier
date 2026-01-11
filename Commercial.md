@@ -6,7 +6,7 @@ Atelier will be available under a Commercial License for use in commercial produ
 
 ## Atelier Editions
 
-Atelier is available in two editions:
+Atelier will be available in two editions:
 
 ### Community Edition (Apache 2.0)
 
