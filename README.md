@@ -1,5 +1,11 @@
 # Atelier
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License: Commercial](https://img.shields.io/badge/License-Commercial-orange.svg)](Commercial.md)
+[![Status: Design](https://img.shields.io/badge/Status-Preliminary%20Design-yellow.svg)]()
+
+> **Note:** This project is currently in the preliminary design phase. The documentation describes the intended architecture and features. Implementation has not yet begun.
+
 **A Purpose-Built Editor for the Fidelity Ecosystem**
 
 Atelier (French for "workshop" or "studio") is a dedicated development environment built on the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**ebView + **R**eactive + **E**mbedded + **N**ative), designed specifically for F# Native development with the Fidelity framework.
@@ -154,4 +160,4 @@ This editor is our workshop for building the Fidelity ecosystem: a tool made by 
 
 ## License
 
-MIT
+Dual-licensed under Apache 2.0 and a commercial license. See [LICENSE](LICENSE) and [Commercial.md](Commercial.md) for details.
