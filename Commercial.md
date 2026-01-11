@@ -2,7 +2,7 @@
 
 ## Overview
 
-Atelier will available under a Commercial License for use in commercial products, services, and enterprise environments. The Commercial License provides rights and protections beyond those offered by the Apache License 2.0, and enables access to Professional tier features.
+Atelier will be available under a Commercial License for use in commercial products, services, and enterprise environments. The Commercial License provides rights and protections beyond those offered by the Apache License 2.0, and enables access to Professional tier features.
 
 ## Atelier Editions
 
