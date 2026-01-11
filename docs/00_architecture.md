@@ -33,20 +33,26 @@ These WebViews are already present, already maintained, and already consuming me
 
 The lowest layer provides raw WebView access:
 
-```
-┌─────────────────────────────────────────────────────┐
-│                Platform WebView                      │
-├─────────────────┬─────────────────┬─────────────────┤
-│   WebKitGTK     │   WKWebView     │   WebView2      │
-│   (Linux)       │   (macOS)       │   (Windows)     │
-├─────────────────┴─────────────────┴─────────────────┤
-│              Common Capabilities:                    │
-│  - Load HTML/URL                                    │
-│  - Execute JavaScript                               │
-│  - Receive script messages                          │
-│  - Custom protocol handlers                         │
-│  - DevTools access                                  │
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph platform["Platform WebView"]
+        subgraph implementations[" "]
+            direction LR
+            webkit["WebKitGTK<br/>(Linux)"]
+            wkweb["WKWebView<br/>(macOS)"]
+            webview2["WebView2<br/>(Windows)"]
+        end
+
+        subgraph capabilities["Common Capabilities"]
+            cap1["Load HTML/URL"]
+            cap2["Execute JavaScript"]
+            cap3["Receive script messages"]
+            cap4["Custom protocol handlers"]
+            cap5["DevTools access"]
+        end
+    end
+
+    implementations --> capabilities
 ```
 
 Each platform provides these capabilities through different APIs, but the semantics are remarkably similar.
@@ -83,15 +89,21 @@ let create config = WebView2 (webview2_create config)
 
 Communication between F# Native backend and WebView frontend uses BAREWire - a binary typed protocol:
 
-```
-┌──────────────┐                    ┌──────────────┐
-│   F# Native  │   BAREWire IPC     │   WebView    │
-│   Backend    │◄──────────────────►│   Frontend   │
-│              │                    │              │
-│  - LSP       │  Binary messages   │  - UI State  │
-│  - PSG       │  Type-safe         │  - Editors   │
-│  - Debug     │  No JSON overhead  │  - Panels    │
-└──────────────┘                    └──────────────┘
+```mermaid
+flowchart LR
+    subgraph backend["F# Native Backend"]
+        lsp["LSP"]
+        psg["PSG"]
+        debug["Debug"]
+    end
+
+    subgraph frontend["WebView Frontend"]
+        ui["UI State"]
+        editors["Editors"]
+        panels["Panels"]
+    end
+
+    backend <-->|"BAREWire IPC<br/>Binary messages<br/>Type-safe<br/>No JSON overhead"| frontend
 ```
 
 Why not JSON?
@@ -133,43 +145,18 @@ For an editor that receives thousands of updates per second (keystrokes, LSP res
 
 ## Data Flow
 
-```
-User Action (keystroke, click, etc.)
-        │
-        ▼
-┌───────────────────┐
-│  SolidJS Signal   │  (Frontend state update)
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│  BAREWire Encode  │  (Serialize to binary)
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│  Script Message   │  (WebView → Native)
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│  F# Native Core   │  (Process: LSP, PSG, Debug)
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│  BAREWire Encode  │  (Serialize response)
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│  Execute Script   │  (Native → WebView)
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│  SolidJS Signal   │  (Frontend state update)
-└───────────────────┘
+```mermaid
+flowchart TB
+    action["User Action<br/>(keystroke, click, etc.)"]
+    signal1["SolidJS Signal<br/>(Frontend state update)"]
+    encode1["BAREWire Encode<br/>(Serialize to binary)"]
+    scriptmsg["Script Message<br/>(WebView → Native)"]
+    native["F# Native Core<br/>(Process: LSP, PSG, Debug)"]
+    encode2["BAREWire Encode<br/>(Serialize response)"]
+    execscript["Execute Script<br/>(Native → WebView)"]
+    signal2["SolidJS Signal<br/>(Frontend state update)"]
+
+    action --> signal1 --> encode1 --> scriptmsg --> native --> encode2 --> execscript --> signal2
 ```
 
 ## Memory Model
@@ -194,22 +181,21 @@ Compare to:
 
 The multi-WebView architecture enables true thread isolation:
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    Main Process                      │
-│                    (F# Native)                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│  │   LSP       │  │   Debug     │  │   Build     │ │
-│  │   Thread    │  │   Thread    │  │   Thread    │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘ │
-└─────────┼────────────────┼────────────────┼────────┘
-          │                │                │
-          ▼                ▼                ▼
-    ┌───────────┐    ┌───────────┐    ┌───────────┐
-    │  Editor   │    │  Debug    │    │  Build    │
-    │  WebView  │    │  WebView  │    │  Output   │
-    │           │    │           │    │  WebView  │
-    └───────────┘    └───────────┘    └───────────┘
+```mermaid
+flowchart TB
+    subgraph main["Main Process (F# Native)"]
+        lsp["LSP Thread"]
+        debug["Debug Thread"]
+        build["Build Thread"]
+    end
+
+    editor["Editor WebView"]
+    debugwv["Debug WebView"]
+    buildwv["Build Output WebView"]
+
+    lsp --> editor
+    debug --> debugwv
+    build --> buildwv
 ```
 
 Each WebView runs in its own process (WebKit/Chromium architecture). Heavy operations (debugging, build monitoring) cannot freeze the editor UI.

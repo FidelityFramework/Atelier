@@ -10,33 +10,34 @@ Atelier is a first-class demonstration of what the WREN Stack enables: a lean, n
 
 Like its namesake bird, WREN Stack applications are designed to be lightweight and quick to start. Atelier embodies this philosophy—a craftsman's tool that respects computational resources while providing the sophisticated tooling that compiler development demands.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Atelier Application                     │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │  Main       │  │  Debug      │  │  PSG        │         │
-│  │  WebView    │  │  WebView    │  │  WebView    │  ...    │
-│  │             │  │             │  │             │         │
-│  │ CodeMirror  │  │ Continuation│  │ D3 Graph    │         │
-│  │ + Dockview  │  │ Inspector   │  │ Renderer    │         │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         │
-│         │                │                │                 │
-│         └────────────────┼────────────────┘                 │
-│                          │ BAREWire IPC                     │
-├──────────────────────────┼──────────────────────────────────┤
-│                    F# Native Core                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ LSP Client   │  │ PSG Engine   │  │ Debug Engine │      │
-│  │ (FSNAC)      │  │ (Firefly)    │  │ (Delim Cont) │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-├─────────────────────────────────────────────────────────────┤
-│                  Platform Abstraction                       │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ WebKitGTK    │  │ WKWebView    │  │ WebView2     │      │
-│  │ (Linux)      │  │ (macOS)      │  │ (Windows)    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph app["Atelier Application"]
+        subgraph webviews["WebViews"]
+            main["Main WebView<br/>CodeMirror + Dockview"]
+            debug["Debug WebView<br/>Continuation Inspector"]
+            psg["PSG WebView<br/>D3 Graph Renderer"]
+            more["..."]
+        end
+
+        ipc[["BAREWire IPC"]]
+
+        subgraph core["F# Native Core"]
+            lsp["LSP Client<br/>(FSNAC)"]
+            psgeng["PSG Engine<br/>(Firefly)"]
+            debugeng["Debug Engine<br/>(Delim Cont)"]
+        end
+
+        subgraph platform["Platform Abstraction"]
+            linux["WebKitGTK<br/>(Linux)"]
+            macos["WKWebView<br/>(macOS)"]
+            windows["WebView2<br/>(Windows)"]
+        end
+    end
+
+    main & debug & psg --> ipc
+    ipc --> core
+    core --> platform
 ```
 
 ## Why Atelier?
