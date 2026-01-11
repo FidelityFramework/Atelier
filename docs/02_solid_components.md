@@ -2,7 +2,7 @@
 
 ## Overview
 
-WRENEdit's frontend is built on two remarkable SolidJS libraries:
+Atelier's frontend is built on two remarkable SolidJS libraries:
 
 - **solid-codemirror** - CodeMirror 6 wrapper with reactive integration
 - **solid-dockview** - VS Code-style docking panel system
@@ -24,7 +24,7 @@ CodeMirror 6 is a complete rewrite of the CodeMirror editor, built with modern p
 | Accessibility | Good | Excellent |
 | Language support | ~50 via TextMate | 20+ via Lezer + TextMate |
 
-For WRENEdit's multi-pane architecture with potentially many editor instances, CodeMirror 6's lightweight footprint is essential.
+For Atelier's multi-pane architecture with potentially many editor instances, CodeMirror 6's lightweight footprint is essential.
 
 ### CodeMirror 6 Architecture
 
@@ -167,7 +167,7 @@ CodeMirror uses [Lezer](https://lezer.codemirror.net/) for incremental parsing. 
 2. **Create Lezer grammar** for F# (better integration)
 3. **Use generic highlighting** + LSP semantic tokens
 
-For WRENEdit, starting with TextMate (option 1) then migrating to Lezer (option 2) is pragmatic.
+For Atelier, starting with TextMate (option 1) then migrating to Lezer (option 2) is pragmatic.
 
 ## Dockview: Panel Management
 
@@ -469,7 +469,7 @@ The combination of solid-codemirror and solid-dockview provides:
 3. **SolidJS integration** - Fine-grained reactivity, components run once
 4. **F# bindings** - Partas.Solid enables type-safe F# development
 
-This foundation enables WRENEdit to rival VSCode's UX while maintaining the lean WREN Stack architecture.
+This foundation enables Atelier to rival VSCode's UX while maintaining the lean WREN Stack architecture.
 
 ## Next Steps
 

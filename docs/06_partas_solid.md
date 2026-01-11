@@ -155,7 +155,7 @@ Switch [
 
 ## Binding External Libraries
 
-Partas.Solid provides the foundation, but WRENEdit needs bindings for:
+Partas.Solid provides the foundation, but Atelier needs bindings for:
 - solid-codemirror
 - solid-dockview
 - xterm.js
@@ -215,11 +215,11 @@ let create (initialValue: string) (onChange: string -> unit) =
         div [ ref result.ref; class' "editor-container" ] []
 ```
 
-## The WRENEdit Frontend Stack
+## The Atelier Frontend Stack
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    WRENEdit Frontend                         │
+│                    Atelier Frontend                         │
 ├─────────────────────────────────────────────────────────────┤
 │  Application Code (F#)                                      │
 │  ┌─────────────────────────────────────────────────────────┐│

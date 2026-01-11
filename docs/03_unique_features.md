@@ -2,7 +2,7 @@
 
 ## The Opportunity
 
-VSCode and NeoVim are general-purpose editors. They excel at breadth but cannot provide depth for specialized domains. WRENEdit, built specifically for the Fidelity ecosystem, can offer capabilities that general editors fundamentally cannot.
+VSCode and NeoVim are general-purpose editors. They excel at breadth but cannot provide depth for specialized domains. Atelier, built specifically for the Fidelity ecosystem, can offer capabilities that general editors fundamentally cannot.
 
 ## Feature 1: Delimited Continuation Debugging
 
@@ -40,9 +40,9 @@ let handler = effect {
 }
 ```
 
-### WRENEdit's Continuation Inspector
+### Atelier's Continuation Inspector
 
-WRENEdit provides specialized debugging for delimited continuations:
+Atelier provides specialized debugging for delimited continuations:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -133,7 +133,7 @@ No existing debugger provides this capability because:
 2. **Stack-based mental models are embedded** - Debugger UIs assume call stacks
 3. **General editors can't integrate deeply** - VSCode's DAP assumes traditional debugging
 
-WRENEdit, built for Fidelity:
+Atelier, built for Fidelity:
 - Understands continuation semantics natively
 - Visualizes non-linear control flow
 - Tracks continuation lifecycle (creation → suspension → invocation → completion)
@@ -318,7 +318,7 @@ Switching phases shows how the PSG gains information:
 
 ### Seeing the Full Picture
 
-WRENEdit can display the entire compilation pipeline for a selection:
+Atelier can display the entire compilation pipeline for a selection:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -400,7 +400,7 @@ let loadConfig path =
 // Inferred effect: IO + Parse + Validation
 ```
 
-WRENEdit displays effect annotations inline:
+Atelier displays effect annotations inline:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -435,7 +435,7 @@ When effects don't compose correctly:
 
 ## Summary
 
-WRENEdit's unique features arise from deep integration with the Fidelity ecosystem:
+Atelier's unique features arise from deep integration with the Fidelity ecosystem:
 
 | Feature | Enabled By |
 |---------|-----------|

@@ -9,7 +9,7 @@ WebGPU is the successor to WebGL, providing modern GPU access from the web platf
 
 This means WebGPU provides access to compute shaders, not just graphics.
 
-## Why WebGPU in WRENEdit?
+## Why WebGPU in Atelier?
 
 ### Use Case 1: PSG Graph Layout
 
@@ -128,7 +128,7 @@ xterm.js already uses WebGL for text rendering. WebGPU could further accelerate:
 - Scroll buffer management
 - Selection highlighting
 
-## WebGPU Architecture in WRENEdit
+## WebGPU Architecture in Atelier
 
 ### Device Acquisition
 
@@ -335,7 +335,7 @@ WebKitGTK, WKWebView, and WebView2 all inherit browser WebGPU support:
 
 ## Native GPU Alternative
 
-For maximum performance, WRENEdit could bypass WebGPU entirely and use native GPU APIs:
+For maximum performance, Atelier could bypass WebGPU entirely and use native GPU APIs:
 
 ```fsharp
 // Native Vulkan/Metal compute
@@ -358,7 +358,7 @@ This is more complex but provides:
 - More control over memory
 - Access to full GPU capabilities
 
-For WRENEdit v1, WebGPU is sufficient. Native compute is a future optimization.
+For Atelier v1, WebGPU is sufficient. Native compute is a future optimization.
 
 ## Practical Recommendations
 
@@ -391,7 +391,7 @@ This is significant additional complexity and should only be pursued if WebGPU b
 
 ## Summary
 
-WebGPU brings GPU compute to WRENEdit's WebViews:
+WebGPU brings GPU compute to Atelier's WebViews:
 
 | Task | CPU Time | WebGPU Time | Speedup |
 |------|----------|-------------|---------|

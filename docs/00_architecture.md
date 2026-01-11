@@ -53,7 +53,7 @@ Each platform provides these capabilities through different APIs, but the semant
 
 ### Layer 2: F# Native Abstraction
 
-WRENEdit abstracts platform differences using F# discriminated unions and conditional compilation:
+Atelier abstracts platform differences using F# discriminated unions and conditional compilation:
 
 ```fsharp
 type WebViewHandle =
@@ -174,7 +174,7 @@ User Action (keystroke, click, etc.)
 
 ## Memory Model
 
-WRENEdit's memory footprint:
+Atelier's memory footprint:
 
 | Component | Approximate Size |
 |-----------|-----------------|

@@ -232,7 +232,7 @@ const extensions = [
 
 This layers LSP intelligence over basic highlighting.
 
-### Recommended Approach for WRENEdit
+### Recommended Approach for Atelier
 
 1. **Start with TextMate** - Immediate basic highlighting
 2. **Add LSP semantic tokens** - FSNAC provides accurate highlighting

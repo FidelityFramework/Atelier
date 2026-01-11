@@ -1,39 +1,18 @@
-# WRENEdit
+# Atelier
 
-**A Speculative Design for a Dedicated Editor to support the Fidelity Ecosystem**
+**A Purpose-Built Editor for the Fidelity Ecosystem**
 
-WRENEdit is a *thought experiment*, a design for a hybrid native code editor built on the WREN Stack (WebView + Reactive + Embedded + Native), designed specifically for F# Native development with the Fidelity framework.
+Atelier (French for "workshop" or "studio") is a dedicated development environment built on the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**ebView + **R**eactive + **E**mbedded + **N**ative), designed specifically for F# Native development with the Fidelity framework.
 
-## Vision
+## A WREN Stack Application
 
-Modern development environments are computationally profligate. Electron apps bundle entire browser runtimes, consuming gigabytes of memory to display text. VSCode, while feature-rich, carries the weight of universal compatibility at the cost of specialized excellence.
+Atelier is a first-class demonstration of what the WREN Stack enables: a lean, native foundation with a reactive web frontend, delivering the polish of modern web UI with the performance of native code.
 
-WRENEdit takes a different path: **a lean, native foundation with a reactive web frontend**, purpose-built for compiler development and the unique demands of the Fidelity ecosystem.
-
-### What Makes WRENEdit Different
-
-| Capability | VSCode/Electron | NeoVim | WRENEdit |
-|------------|-----------------|--------|----------|
-| Memory footprint | ~500MB+ | ~50MB | ~80MB (native + WebView) |
-| Startup time | 2-5 seconds | <100ms | <200ms |
-| PSG visualization | Plugin (limited) | Not practical | Native D3 integration |
-| Delimited continuation debugging | Not supported | Not supported | First-class support |
-| Multi-WebView architecture | Single process | N/A | Multiple isolated WebViews |
-| WebGPU compute | Limited | N/A | Direct access |
-
-### Core Principles
-
-1. **Computational Responsibility** - Every byte of memory, every CPU cycle is justified
-2. **Compiler-Aware Tooling** - Deep integration with Firefly's PSG and MLIR pipeline
-3. **Native Performance** - F# Native backend, no managed runtime
-4. **Web-Class UI** - SolidJS reactivity with CodeMirror 6's proven editor foundation
-5. **Multi-WebView Architecture** - Thread isolation for debugging, monitoring, visualization
-
-## Architecture
+Like its namesake bird, WREN Stack applications are designed to be lightweight and quick to start. Atelier embodies this philosophy—a craftsman's tool that respects computational resources while providing the sophisticated tooling that compiler development demands.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     WRENEdit Application                      │
+│                     Atelier Application                     │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
 │  │  Main       │  │  Debug      │  │  PSG        │         │
@@ -52,7 +31,7 @@ WRENEdit takes a different path: **a lean, native foundation with a reactive web
 │  │ (FSNAC)      │  │ (Firefly)    │  │ (Delim Cont) │      │
 │  └──────────────┘  └──────────────┘  └──────────────┘      │
 ├─────────────────────────────────────────────────────────────┤
-│                  Platform Abstraction                        │
+│                  Platform Abstraction                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
 │  │ WebKitGTK    │  │ WKWebView    │  │ WebView2     │      │
 │  │ (Linux)      │  │ (macOS)      │  │ (Windows)    │      │
@@ -60,10 +39,44 @@ WRENEdit takes a different path: **a lean, native foundation with a reactive web
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Why Atelier?
+
+Modern development environments are computationally profligate. Electron apps bundle entire browser runtimes, consuming gigabytes of memory to display text. VSCode, while feature-rich, carries the weight of universal compatibility at the cost of specialized excellence.
+
+Atelier takes a different path: purpose-built tooling for the Fidelity ecosystem, with deep integration into Firefly's compilation pipeline.
+
+| Capability | VSCode/Electron | NeoVim | Atelier |
+|------------|-----------------|--------|---------|
+| Memory footprint | ~500MB+ | ~50MB | ~80MB (native + WebView) |
+| Startup time | 2-5 seconds | <100ms | <200ms |
+| PSG visualization | Plugin (limited) | Not practical | Native D3 integration |
+| Delimited continuation debugging | Not supported | Not supported | First-class support |
+| Multi-WebView architecture | Single process | N/A | Multiple isolated WebViews |
+| WebGPU compute | Limited | N/A | Direct access |
+
+### Design Principles
+
+1. **Computational Responsibility** - Every byte of memory, every CPU cycle is justified
+2. **Compiler-Aware Tooling** - Deep integration with Firefly's PSG and MLIR pipeline
+3. **Native Performance** - F# Native backend compiled by Firefly, no managed runtime
+4. **Web-Class UI** - SolidJS reactivity with CodeMirror 6's proven editor foundation
+5. **Multi-WebView Architecture** - Thread isolation for debugging, monitoring, visualization
+
+## The WREN Stack Advantage
+
+The WREN Stack eliminates the false choice between native performance and modern UI:
+
+- **WebView as rendering surface** - System WebView (WebKitGTK, WKWebView, WebView2) instead of bundled Chromium
+- **Reactive UI through Partas.Solid** - F# compiles to both native backend and JavaScript frontend from shared types
+- **Embedded assets** - HTML, CSS, and assets frozen into the binary's read-only memory
+- **Native F# logic** - Compiled through Firefly to machine code, communicating via BAREWire IPC
+
+The result: desktop applications that start in milliseconds, consume minimal memory, and feel native—because they are.
+
 ## Technology Stack
 
 ### Frontend (WebView)
-- **[Partas.Solid](https://github.com/Partas/Partas.Solid)** - F# bindings for SolidJS via Fable. Shared types compile to both native backend and JavaScript frontend.
+- **[Partas.Solid](https://github.com/Partas/Partas.Solid)** - F# bindings for SolidJS via Fable
 - **SolidJS** - Fine-grained reactivity, components run once
 - **CodeMirror 6** - Modern editor with Lezer parsing, LSP support
 - **solid-dockview** - VS Code-style panel docking with floating windows
@@ -81,6 +94,20 @@ WRENEdit takes a different path: **a lean, native foundation with a reactive web
 - Conditional compilation for platform-specific WebView implementations
 - Script message handlers for bidirectional communication
 
+## Unique Capabilities
+
+### PSG Visualization
+
+Atelier provides real-time visualization of Firefly's Program Semantic Graph—the intermediate representation that carries type information, coeffects, and semantic relationships through compilation. Watch your code transform from syntax to semantics to MLIR.
+
+### Delimited Continuation Debugging
+
+First-class debugging support for delimited continuations, the foundation of Fidelity's async model. Step through continuation captures and resumptions, inspect continuation frames, visualize the control flow that traditional debuggers can't represent.
+
+### Multi-WebView Architecture
+
+Each major function runs in its own WebView with its own JavaScript context. The editor, debugger, PSG visualizer, and terminal are isolated—a crash in one doesn't affect the others. This architecture also enables WebGPU compute in visualization WebViews without affecting editor responsiveness.
+
 ## Documentation
 
 See the [docs/](./docs/) folder for detailed documentation:
@@ -93,6 +120,7 @@ See the [docs/](./docs/) folder for detailed documentation:
 - [05_webgpu.md](./docs/05_webgpu.md) - WebGPU compute integration
 - [06_partas_solid.md](./docs/06_partas_solid.md) - Partas.Solid: F# to SolidJS compilation
 - [07_lezer_parsing.md](./docs/07_lezer_parsing.md) - Lezer: CodeMirror's incremental parsing foundation
+- [08_tooling_integration.md](./docs/08_tooling_integration.md) - Integration with the Fidelity toolchain
 
 ## Building
 
@@ -100,23 +128,28 @@ See the [docs/](./docs/) folder for detailed documentation:
 
 ```bash
 # Build the native backend
-firefly compile WRENEdit.fidproj
+firefly compile Atelier.fidproj
 
 # Build the frontend
 cd frontend && npm run build
 
 # Run
-./WRENEdit
+./Atelier
 ```
 
 ## Related Projects
 
 | Project | Description |
 |---------|-------------|
-| [Firefly](https://github.com/user/Firefly) | F# Native AOT compiler |
-| [WRENHello](https://github.com/user/WRENHello) | WREN Stack proof of concept |
-| [FSNAC](https://github.com/user/FsNativeAutoComplete) | F# Native language server |
-| [Alloy](https://github.com/user/Alloy) | Native standard library |
+| [Firefly](https://github.com/speakeztechnologies/Firefly) | F# Native AOT compiler |
+| [FSNAC](https://github.com/speakeztechnologies/FsNativeAutoComplete) | F# Native language server |
+| [BAREWire](https://github.com/speakeztechnologies/BAREWire) | Schema-driven binary serialization |
+
+## The Name
+
+*Atelier* - a workshop or studio, especially for an artist or designer. A space where craft meets creation.
+
+This editor is our workshop for building the Fidelity ecosystem: a tool made by compiler developers, for compiler developers, embodying the same principles of computational responsibility and native performance that define the framework itself.
 
 ## License
 

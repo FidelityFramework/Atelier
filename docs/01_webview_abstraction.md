@@ -2,7 +2,7 @@
 
 ## WRY Overview
 
-[WRY](https://github.com/tauri-apps/wry) (WebView Rendering librarY) is the Rust library that powers Tauri's cross-platform WebView support. Studying WRY's architecture provides valuable lessons for WRENEdit's F# Native implementation.
+[WRY](https://github.com/tauri-apps/wry) (WebView Rendering librarY) is the Rust library that powers Tauri's cross-platform WebView support. Studying WRY's architecture provides valuable lessons for Atelier's F# Native implementation.
 
 ## WRY's Abstraction Strategy
 
@@ -75,11 +75,11 @@ let loadUrl handle url =
 ```fsharp
 // WebView.fs - public API
 #if LINUX
-open WRENEdit.Platform.WebKitGTK
+open Atelier.Platform.WebKitGTK
 #elif MACOS
-open WRENEdit.Platform.WKWebView
+open Atelier.Platform.WKWebView
 #elif WINDOWS
-open WRENEdit.Platform.WebView2
+open Atelier.Platform.WebView2
 #endif
 
 let create config = platformCreate config
@@ -92,7 +92,7 @@ let executeScript handle script = platformExecuteScript handle script
 
 ### Recommendation: Hybrid Approach
 
-For WRENEdit, use conditional compilation for the core WebView operations, but allow runtime detection for cross-platform development scenarios:
+For Atelier, use conditional compilation for the core WebView operations, but allow runtime detection for cross-platform development scenarios:
 
 ```fsharp
 module WebView =

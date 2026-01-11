@@ -27,7 +27,7 @@ Traditional Electron apps and simple WebView wrappers use a single WebView for t
 
 ## The Multi-WebView Solution
 
-WRENEdit uses multiple WebView instances, each running in its own process:
+Atelier uses multiple WebView instances, each running in its own process:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -76,7 +76,7 @@ type EditorWebView = {
 
 let createEditorWebView () =
     let webview = WebView.create {
-        Title = "WRENEdit"
+        Title = "Atelier"
         Width = 1200
         Height = 800
         DevTools = true
@@ -103,7 +103,7 @@ type DebugWebView = {
 
 let createDebugWebView () =
     let webview = WebView.create {
-        Title = "WRENEdit - Debugger"
+        Title = "Atelier - Debugger"
         Width = 800
         Height = 600
         DevTools = true
@@ -137,7 +137,7 @@ type PSGWebView = {
 
 let createPSGWebView () =
     let webview = WebView.create {
-        Title = "WRENEdit - PSG Viewer"
+        Title = "Atelier - PSG Viewer"
         Width = 1000
         Height = 700
         DevTools = true
@@ -170,7 +170,7 @@ type TerminalWebView = {
 
 let createTerminalWebView () =
     let webview = WebView.create {
-        Title = "WRENEdit - Terminal"
+        Title = "Atelier - Terminal"
         Width = 800
         Height = 400
         DevTools = false
@@ -203,7 +203,7 @@ let createTerminalWebView () =
 The F# Native backend coordinates all WebViews:
 
 ```fsharp
-type WRENEditApp = {
+type AtelierApp = {
     Editor: EditorWebView
     Debug: DebugWebView option
     PSG: PSGWebView option
@@ -213,7 +213,7 @@ type WRENEditApp = {
 }
 
 module Coordinator =
-    let mutable app: WRENEditApp option = None
+    let mutable app: AtelierApp option = None
 
     let start () =
         let editor = createEditorWebView ()
