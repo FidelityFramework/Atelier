@@ -8,7 +8,7 @@
 
 **A Purpose-Built Editor for the Fidelity Ecosystem**
 
-Atelier (French for "workshop" or "studio") is a dedicated development environment built on the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**ebView + **R**eactive + **E**mbedded + **N**ative), designed specifically for F# Native development with the Fidelity framework.
+Atelier (French for "workshop" or "studio") is a dedicated development environment built using the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**ebView + **R**eactive + **E**mbedded + **N**ative). While a "pure native" UI is in the works, we plan to use a hybrid model that's lighter than Electron and has enough performance for highly responsive interactive work. It's currently designed specifically for F# Native development with the Fidelity framework.
 
 ## A WREN Stack Application
 
