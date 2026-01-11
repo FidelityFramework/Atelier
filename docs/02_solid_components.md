@@ -28,24 +28,22 @@ For Atelier's multi-pane architecture with potentially many editor instances, Co
 
 ### CodeMirror 6 Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      EditorView                              │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │                    EditorState                          ││
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     ││
-│  │  │   Document  │  │  Selection  │  │  Extensions │     ││
-│  │  │   (Text)    │  │  (Cursor)   │  │  (Config)   │     ││
-│  │  └─────────────┘  └─────────────┘  └─────────────┘     ││
-│  └─────────────────────────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │                   Extensions                             ││
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       ││
-│  │  │ Language│ │  Theme  │ │ Keymaps │ │   LSP   │       ││
-│  │  │ (Lezer) │ │ (Style) │ │ (Input) │ │ (Diag)  │       ││
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       ││
-│  └─────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph editorview["EditorView"]
+        subgraph editorstate["EditorState"]
+            doc["Document<br/>(Text)"]
+            sel["Selection<br/>(Cursor)"]
+            extconfig["Extensions<br/>(Config)"]
+        end
+
+        subgraph extensions["Extensions"]
+            lang["Language<br/>(Lezer)"]
+            theme["Theme<br/>(Style)"]
+            keymaps["Keymaps<br/>(Input)"]
+            lsp["LSP<br/>(Diag)"]
+        end
+    end
 ```
 
 ### solid-codemirror
@@ -175,30 +173,28 @@ For Atelier, starting with TextMate (option 1) then migrating to Lezer (option 2
 
 ### Dockview Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     DockviewReact                           │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │                   Panel Groups                          ││
-│  │  ┌───────────────────┐  ┌───────────────────┐          ││
-│  │  │   Group 1         │  │   Group 2         │          ││
-│  │  │  ┌─────┬─────┐   │  │  ┌─────┐          │          ││
-│  │  │  │Tab 1│Tab 2│   │  │  │Tab 3│          │          ││
-│  │  │  └─────┴─────┘   │  │  └─────┘          │          ││
-│  │  │  ┌─────────────┐ │  │  ┌─────────────┐  │          ││
-│  │  │  │   Content   │ │  │  │   Content   │  │          ││
-│  │  │  │   Panel 1   │ │  │  │   Panel 3   │  │          ││
-│  │  │  └─────────────┘ │  │  └─────────────┘  │          ││
-│  │  └───────────────────┘  └───────────────────┘          ││
-│  └─────────────────────────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │              Floating/Popout Windows                    ││
-│  │  ┌─────────────┐  ┌─────────────┐                      ││
-│  │  │  Floating   │  │  Popout     │  (separate window)   ││
-│  │  │  Dialog     │  │  Monitor 2  │                      ││
-│  │  └─────────────┘  └─────────────┘                      ││
-│  └─────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph dockview["DockviewReact"]
+        subgraph panelgroups["Panel Groups"]
+            subgraph group1["Group 1"]
+                tabs1["Tab 1 | Tab 2"]
+                content1["Content Panel 1"]
+            end
+            subgraph group2["Group 2"]
+                tabs2["Tab 3"]
+                content2["Content Panel 3"]
+            end
+        end
+
+        subgraph floating["Floating/Popout Windows"]
+            floatdlg["Floating Dialog"]
+            popout["Popout<br/>(separate window)"]
+        end
+    end
+
+    tabs1 --> content1
+    tabs2 --> content2
 ```
 
 ### solid-dockview

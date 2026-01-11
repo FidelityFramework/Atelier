@@ -10,14 +10,20 @@
 
 WRY organizes code into three tiers:
 
-```
-┌─────────────────────────────────────────┐
-│         Public API (wry crate)          │  User-facing types
-├─────────────────────────────────────────┤
-│       Platform Abstraction Layer        │  Common interfaces
-├────────────┬────────────┬───────────────┤
-│  webkitgtk │  wkwebview │   webview2    │  Platform-specific
-└────────────┴────────────┴───────────────┘
+```mermaid
+flowchart TB
+    subgraph tiers["Three-Tier Architecture"]
+        api["Public API (wry crate)<br/>User-facing types"]
+        abstraction["Platform Abstraction Layer<br/>Common interfaces"]
+        subgraph platforms["Platform-specific"]
+            direction LR
+            webkit["webkitgtk"]
+            wkweb["wkwebview"]
+            webview2["webview2"]
+        end
+    end
+
+    api --> abstraction --> platforms
 ```
 
 ### No Explicit Trait (Structural Polymorphism)

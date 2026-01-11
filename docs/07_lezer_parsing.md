@@ -2,20 +2,15 @@
 
 ## Dependency Chain
 
-```
-Partas.Solid.CodeMirror (F# bindings, future)
-        │
-        ▼
-solid-codemirror (SolidJS wrapper)
-        │
-        ▼
-@codemirror/language (language support infrastructure)
-        │
-        ▼
-@lezer/lr (incremental LR parser runtime)
-        │
-        ▼
-@lezer/common (tree representation, cursors)
+```mermaid
+flowchart TB
+    partas["Partas.Solid.CodeMirror<br/>(F# bindings, future)"]
+    solidcm["solid-codemirror<br/>(SolidJS wrapper)"]
+    cmlang["@codemirror/language<br/>(language support infrastructure)"]
+    lezerlr["@lezer/lr<br/>(incremental LR parser runtime)"]
+    lezercommon["@lezer/common<br/>(tree representation, cursors)"]
+
+    partas --> solidcm --> cmlang --> lezerlr --> lezercommon
 ```
 
 Understanding Lezer is necessary for:
@@ -39,15 +34,17 @@ When a user types, Lezer doesn't re-parse the entire file. It:
 3. Reuses unchanged subtrees
 4. Re-parses only affected regions
 
-```
-Document: "let x = 1\nlet y = 2\nlet z = 3"
-                          ▲
-                    User types here
+```mermaid
+flowchart TB
+    subgraph doc["Document: 'let x = 1\\nlet y = 2\\nlet z = 3'"]
+        edit["User types here ↑"]
+    end
 
-Previous tree:
-├── LetBinding (let x = 1)  ← reused
-├── LetBinding (let y = 2)  ← re-parsed
-└── LetBinding (let z = 3)  ← reused (positions shifted)
+    subgraph tree["Previous Tree"]
+        let1["LetBinding (let x = 1)<br/>← reused"]
+        let2["LetBinding (let y = 2)<br/>← re-parsed"]
+        let3["LetBinding (let z = 3)<br/>← reused (positions shifted)"]
+    end
 ```
 
 Balanced subtrees from repeat operators (`*`, `+`) enable fine-grained reuse. A change inside one function doesn't trigger re-parsing of sibling functions.
@@ -117,21 +114,16 @@ kw<term> { @specialize[@name={term}]<Identifier, term> }
 
 Lezer trees optimize for memory and locality:
 
-```
-Packed buffer (small subtrees):
-┌────┬────┬────┬────┬────┬────┬────┬────┐
-│type│from│ to │type│from│ to │... │    │
-└────┴────┴────┴────┴────┴────┴────┴────┘
-  64 bits per node, flat array
+```mermaid
+flowchart LR
+    subgraph packed["Packed Buffer (small subtrees)"]
+        direction LR
+        buf["| type | from | to | type | from | to | ... |<br/>64 bits per node, flat array"]
+    end
 
-Tree nodes (larger structures):
-┌──────────────────┐
-│ SyntaxNode       │
-│ - type: NodeType │
-│ - from: number   │
-│ - to: number     │
-│ - children: []   │
-└──────────────────┘
+    subgraph treenode["Tree Nodes (larger structures)"]
+        node["SyntaxNode<br/>- type: NodeType<br/>- from: number<br/>- to: number<br/>- children: []"]
+    end
 ```
 
 ### Tree Access

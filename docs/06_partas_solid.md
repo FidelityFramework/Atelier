@@ -217,37 +217,34 @@ let create (initialValue: string) (onChange: string -> unit) =
 
 ## The Atelier Frontend Stack
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Atelier Frontend                         │
-├─────────────────────────────────────────────────────────────┤
-│  Application Code (F#)                                      │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │  IDE.fs, EditorPanel.fs, PSGViewer.fs, etc.            ││
-│  └─────────────────────────────────────────────────────────┘│
-├─────────────────────────────────────────────────────────────┤
-│  Library Bindings (F#)                                      │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
-│  │ CodeMirror  │ │  Dockview   │ │   D3.js     │  ...     │
-│  │  Bindings   │ │  Bindings   │ │  Bindings   │          │
-│  └─────────────┘ └─────────────┘ └─────────────┘          │
-├─────────────────────────────────────────────────────────────┤
-│  Partas.Solid                                               │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │  createSignal, createEffect, createMemo, For, Show...  ││
-│  │  JSX-like element constructors, event handling         ││
-│  └─────────────────────────────────────────────────────────┘│
-├─────────────────────────────────────────────────────────────┤
-│  Fable Compiler                                             │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │  F# AST → JavaScript (with SolidJS imports)            ││
-│  └─────────────────────────────────────────────────────────┘│
-├─────────────────────────────────────────────────────────────┤
-│  SolidJS Runtime                                            │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │  Fine-grained reactivity, DOM reconciliation           ││
-│  └─────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph frontend["Atelier Frontend"]
+        subgraph appcode["Application Code (F#)"]
+            ide["IDE.fs, EditorPanel.fs, PSGViewer.fs, etc."]
+        end
+
+        subgraph bindings["Library Bindings (F#)"]
+            cm["CodeMirror Bindings"]
+            dv["Dockview Bindings"]
+            d3["D3.js Bindings"]
+            more["..."]
+        end
+
+        subgraph partas["Partas.Solid"]
+            primitives["createSignal, createEffect, createMemo, For, Show...<br/>JSX-like element constructors, event handling"]
+        end
+
+        subgraph fable["Fable Compiler"]
+            compile["F# AST → JavaScript (with SolidJS imports)"]
+        end
+
+        subgraph solid["SolidJS Runtime"]
+            runtime["Fine-grained reactivity, DOM reconciliation"]
+        end
+    end
+
+    appcode --> bindings --> partas --> fable --> solid
 ```
 
 Partas.Solid maps F# constructs to SolidJS primitives. The layers above it (library bindings, application code) are written in F# and compiled through this stack.

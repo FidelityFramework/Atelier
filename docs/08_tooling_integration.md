@@ -14,41 +14,35 @@ Verification confirms these claims against actual hardware behavior using tools 
 
 ## Integration Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    Tooling Integration Layers                           │
-│                                                                         │
-│  ┌─────────────────────────────────────────────────────────────────────┐│
-│  │  Presentation Layer (Editor-Specific)                               ││
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                 ││
-│  │  │  Atelier   │  │    nvim     │  │   VSCode    │  ...            ││
-│  │  │  (Native)   │  │   (Lua)     │  │ (Extension) │                 ││
-│  │  └─────────────┘  └─────────────┘  └─────────────┘                 ││
-│  └─────────────────────────────────────────────────────────────────────┘│
-│                              │                                          │
-│                              ▼                                          │
-│  ┌─────────────────────────────────────────────────────────────────────┐│
-│  │  Protocol Layer (Editor-Agnostic)                                   ││
-│  │  - LSP extensions (fidelity/*)                                      ││
-│  │  - JSON verification results format                                 ││
-│  │  - SARIF for CI/CD                                                  ││
-│  └─────────────────────────────────────────────────────────────────────┘│
-│                              │                                          │
-│                              ▼                                          │
-│  ┌─────────────────────────────────────────────────────────────────────┐│
-│  │  Analysis Layer                                                     ││
-│  │  - fidelity-verify CLI                                              ││
-│  │  - FSNAC LSP server                                                 ││
-│  └─────────────────────────────────────────────────────────────────────┘│
-│                              │                                          │
-│                              ▼                                          │
-│  ┌─────────────────────────────────────────────────────────────────────┐│
-│  │  Collection Layer (Platform-Specific)                               ││
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                 ││
-│  │  │ Linux/perf  │  │ Intel/VTune │  │ macOS/Instr │                 ││
-│  │  └─────────────┘  └─────────────┘  └─────────────┘                 ││
-│  └─────────────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph layers["Tooling Integration Layers"]
+        subgraph presentation["Presentation Layer (Editor-Specific)"]
+            atelier["Atelier<br/>(Native)"]
+            nvim["nvim<br/>(Lua)"]
+            vscode["VSCode<br/>(Extension)"]
+            more["..."]
+        end
+
+        subgraph protocol["Protocol Layer (Editor-Agnostic)"]
+            lsp["LSP extensions (fidelity/*)"]
+            json["JSON verification results format"]
+            sarif["SARIF for CI/CD"]
+        end
+
+        subgraph analysis["Analysis Layer"]
+            cli["fidelity-verify CLI"]
+            fsnac["FSNAC LSP server"]
+        end
+
+        subgraph collection["Collection Layer (Platform-Specific)"]
+            perf["Linux/perf"]
+            vtune["Intel/VTune"]
+            instr["macOS/Instruments"]
+        end
+    end
+
+    presentation --> protocol --> analysis --> collection
 ```
 
 ## Atelier Native Integration
@@ -59,31 +53,22 @@ Atelier's multi-WebView architecture enables the richest integration:
 
 A dedicated WebView for verification results:
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  Atelier                                                    [─][□][×]  │
-├─────────────────────────────────────────────────────────────────────────┤
-│  ┌────────────────────────────────┬────────────────────────────────────┐│
-│  │  Editor                        │  Verification Panel                ││
-│  │                                │                                    ││
-│  │  1│ [<CacheLineAligned>]      │  Cache Analysis                    ││
-│  │  2│ type WorkerState = {      │  ────────────────                  ││
-│  │  3│   mutable counter: int64  │  [✓] Arena isolation confirmed     ││
-│  │  4│   mutable flags: byte     │      0 HITM events                 ││
-│  │  5│ }                         │                                    ││
-│  │  6│                           │  [!] Line 12: False sharing        ││
-│  │  7│ type SharedState = {      │      1,247 HITM events             ││
-│  │  8│   mutable a: int64        │      Fields 'a' and 'b'            ││
-│  │  9│   mutable b: int64        │                                    ││
-│  │ 10│ }                         │  ────────────────                  ││
-│  │ 11│                           │  Last run: 12:34:56                ││
-│  │ 12│ let shared = ...⚠️        │  Profile: 2.3 MB, 1.2M samples    ││
-│  │                                │                                    ││
-│  └────────────────────────────────┴────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────────────────────┐│
-│  │  Terminal: perf c2c record complete (exit 0)                        ││
-│  └─────────────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph atelier["Atelier"]
+        subgraph main["Main View"]
+            subgraph editor["Editor"]
+                code["[CacheLineAligned]<br/>type WorkerState = {...}<br/>type SharedState = {...}<br/>let shared = ... ⚠️"]
+            end
+
+            subgraph verify["Verification Panel"]
+                results["Cache Analysis<br/>✓ Arena isolation confirmed (0 HITM)<br/>! Line 12: False sharing (1,247 HITM)"]
+                meta["Last run: 12:34:56<br/>Profile: 2.3 MB, 1.2M samples"]
+            end
+        end
+
+        terminal["Terminal: perf c2c record complete (exit 0)"]
+    end
 ```
 
 ### Data Flow
@@ -143,26 +128,19 @@ let InlineDiagnostic (props: {| diagnostic: Diagnostic |}) =
 
 For complex layouts, visualize cache line boundaries:
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  Cache Line Map: WorkerState[]                                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  Cache Line 0 (0x1000-0x103F)                                          │
-│  ┌──────────────────────────────────────────────────────────┐          │
-│  │ WorkerState[0]                                           │          │
-│  │ counter: 8B │ flags: 1B │ padding: 55B                   │          │
-│  └──────────────────────────────────────────────────────────┘          │
-│  Access: Thread 0 only ✓                                               │
-│                                                                         │
-│  Cache Line 1 (0x1040-0x107F)                                          │
-│  ┌──────────────────────────────────────────────────────────┐          │
-│  │ WorkerState[1]                                           │          │
-│  │ counter: 8B │ flags: 1B │ padding: 55B                   │          │
-│  └──────────────────────────────────────────────────────────┘          │
-│  Access: Thread 1 only ✓                                               │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph cachemap["Cache Line Map: WorkerState[]"]
+        subgraph line0["Cache Line 0 (0x1000-0x103F)"]
+            ws0["WorkerState[0]<br/>counter: 8B | flags: 1B | padding: 55B"]
+            access0["Access: Thread 0 only ✓"]
+        end
+
+        subgraph line1["Cache Line 1 (0x1040-0x107F)"]
+            ws1["WorkerState[1]<br/>counter: 8B | flags: 1B | padding: 55B"]
+            access1["Access: Thread 1 only ✓"]
+        end
+    end
 ```
 
 ## nvim Integration

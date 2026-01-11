@@ -4,18 +4,16 @@
 
 Traditional Electron apps and simple WebView wrappers use a single WebView for the entire application:
 
-```
-┌─────────────────────────────────────────┐
-│           Single WebView                │
-│  ┌─────────────────────────────────────┐│
-│  │         Application UI              ││
-│  │  ┌──────┐ ┌──────┐ ┌──────┐        ││
-│  │  │Editor│ │Debug │ │Terminal       ││
-│  │  │      │ │Panel │ │      │        ││
-│  │  └──────┘ └──────┘ └──────┘        ││
-│  └─────────────────────────────────────┘│
-│        Single JavaScript Thread         │
-└─────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph single["Single WebView"]
+        subgraph ui["Application UI"]
+            editor["Editor"]
+            debugpanel["Debug Panel"]
+            terminal["Terminal"]
+        end
+        thread["Single JavaScript Thread"]
+    end
 ```
 
 **Problems:**
@@ -29,22 +27,22 @@ Traditional Electron apps and simple WebView wrappers use a single WebView for t
 
 Atelier uses multiple WebView instances, each running in its own process:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    F# Native Coordinator                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │   Editor    │  │   Debug     │  │  Resource   │  ...    │
-│  │   Manager   │  │   Engine    │  │  Monitor    │         │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         │
-└─────────┼────────────────┼────────────────┼────────────────┘
-          │                │                │
-          │ IPC            │ IPC            │ IPC
-          ▼                ▼                ▼
-    ┌───────────┐    ┌───────────┐    ┌───────────┐
-    │  Editor   │    │  Debug    │    │  Monitor  │
-    │  WebView  │    │  WebView  │    │  WebView  │
-    │  (pid 1)  │    │  (pid 2)  │    │  (pid 3)  │
-    └───────────┘    └───────────┘    └───────────┘
+```mermaid
+flowchart TB
+    subgraph coordinator["F# Native Coordinator"]
+        editormgr["Editor Manager"]
+        debugeng["Debug Engine"]
+        resmgr["Resource Monitor"]
+        more["..."]
+    end
+
+    editorwv["Editor WebView<br/>(pid 1)"]
+    debugwv["Debug WebView<br/>(pid 2)"]
+    monitorwv["Monitor WebView<br/>(pid 3)"]
+
+    editormgr -->|IPC| editorwv
+    debugeng -->|IPC| debugwv
+    resmgr -->|IPC| monitorwv
 ```
 
 **Benefits:**
@@ -253,24 +251,17 @@ module Coordinator =
 
 WebViews communicate through the native coordinator:
 
-```
-┌─────────────────┐         ┌─────────────────┐
-│  Editor WebView │         │  Debug WebView  │
-└────────┬────────┘         └────────┬────────┘
-         │                           │
-         │ "set_breakpoint"          │
-         ▼                           │
-┌─────────────────────────────────────────────┐
-│              F# Native Coordinator           │
-│                                             │
-│  handleMessage msg =                        │
-│      match msg.Type with                    │
-│      | "set_breakpoint" ->                  │
-│          Breakpoints.add msg.Location       │
-│          // Notify debug WebView            │
-│          Debug.send "breakpoint_added" loc  │──────►
-│      | ...                                  │
-└─────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    editorwv["Editor WebView"]
+    debugwv["Debug WebView"]
+
+    subgraph coordinator["F# Native Coordinator"]
+        handler["handleMessage:<br/>match msg.Type with<br/>| 'set_breakpoint' →<br/>    Breakpoints.add loc<br/>    Debug.send 'breakpoint_added'"]
+    end
+
+    editorwv -->|"set_breakpoint"| coordinator
+    coordinator -->|"breakpoint_added"| debugwv
 ```
 
 ```fsharp
@@ -460,25 +451,28 @@ let createFloatingWebView title content =
 
 Dockview's popout feature combined with separate WebViews enables true multi-monitor:
 
-```
-Monitor 1                      Monitor 2
-┌─────────────────────┐       ┌─────────────────────┐
-│  Editor WebView     │       │  PSG WebView        │
-│  ┌───────┬────────┐ │       │                     │
-│  │ Code  │Terminal│ │       │    [PSG Graph]      │
-│  │       │        │ │       │                     │
-│  └───────┴────────┘ │       │                     │
-└─────────────────────┘       └─────────────────────┘
+```mermaid
+flowchart LR
+    subgraph mon1["Monitor 1"]
+        subgraph editorwv["Editor WebView"]
+            code["Code"]
+            term["Terminal"]
+        end
+    end
 
-Monitor 3
-┌─────────────────────┐
-│  Debug WebView      │
-│  ┌────────────────┐ │
-│  │ Continuations  │ │
-│  │ Variables      │ │
-│  │ Call Stack     │ │
-│  └────────────────┘ │
-└─────────────────────┘
+    subgraph mon2["Monitor 2"]
+        subgraph psgwv["PSG WebView"]
+            graph["PSG Graph"]
+        end
+    end
+
+    subgraph mon3["Monitor 3"]
+        subgraph debugwv["Debug WebView"]
+            cont["Continuations"]
+            vars["Variables"]
+            stack["Call Stack"]
+        end
+    end
 ```
 
 ## Summary
