@@ -6,15 +6,24 @@
 
 > **Note:** This project is currently in the preliminary design phase. The documentation describes the intended architecture and features. Implementation has not yet begun.
 
-**A Purpose-Built Editor for the Fidelity Ecosystem**
+**The Fidelity Framework IDE - Self-Hosting via WRENStack**
 
-Atelier (French for "workshop" or "studio") is our name for a future professional development environment that we plan to bootstrap using the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**ebView + **R**eactive + **E**mbedded + **N**ative). While a "pure native" UI is in the works, we plan to use a hybrid model that's lighter than Electron and has enough performance for highly responsive interactive work. It's currently designed specifically for F# Native development with the Fidelity framework.
+Atelier (French for "workshop" or "studio") is the professional development environment for the Fidelity ecosystem. It will be **self-hosting** - built using the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**ebView + **R**eactive + **E**mbedded + **N**ative) that it supports.
 
-## A WREN Stack Application
+As a Fidelity IDE, Atelier provides deep integration with Firefly's compilation pipeline, PSG visualization, and delimited continuation debugging. As a WRENStack application, it demonstrates the architecture pattern: Partas.Solid frontend, Firefly-compiled backend, BAREWire IPC.
 
-Atelier aims to be a first-class demonstration of what the WREN Stack enables: a lean, native foundation with a reactive web frontend, delivering the polish of modern web UI with the performance of native code.
+While FidelityUI (a future native UI model) is planned, WRENStack provides an interim path using proven web technology with native-quality performance.
 
-Like its namesake bird, WREN Stack applications are designed to be lightweight and quick to start. Atelier embodies this philosophy, a craftsman's tool that respects computational resources while providing the sophisticated tooling that compiler development demands.
+## Self-Hosting WRENStack
+
+Atelier is both the **tool** and the **demonstration**:
+
+- **As a Fidelity IDE**: Deep integration with Firefly's compilation pipeline, including PSG visualization, nanopass inspection, and delimited continuation debugging
+- **As a WRENStack application**: A lean, native foundation with a reactive web frontend, proving the architecture it supports
+
+The self-hosting aspect is intentional: Atelier will be used to develop Fidelity applications, including future versions of Atelier itself. This creates a tight feedback loop where improvements to the compiler directly benefit the IDE, and IDE requirements drive compiler evolution.
+
+Like its namesake bird, WRENStack applications are designed to be lightweight and quick to start. Atelier embodies this philosophy - a craftsman's tool that respects computational resources while providing the sophisticated tooling that compiler development demands.
 
 ```mermaid
 flowchart TB
@@ -105,7 +114,15 @@ The result: desktop applications that start in milliseconds, consume minimal mem
 
 ### PSG Visualization
 
-Atelier contemplates providing real-time visualization of Firefly's Program Semantic Graph, the intermediate representation that carries type information, coeffects, and semantic relationships through compilation. The goal: watch your code transform from syntax to semantics to MLIR.
+Atelier contemplates providing real-time visualization of Firefly's **Program Semantic Graph** - the intermediate representation that carries type information, coeffects, and semantic relationships through the nanopass pipeline.
+
+The PSG captures the **Four Pillars** architecture:
+- **Coeffects** (mise-en-place) - Resource requirements marked on nodes before code generation
+- **Active Patterns** - Semantic lenses that classify nodes by operation kind
+- **Zipper traversal** - The "camera" that moves through the graph, never dispatching
+- **Templates** - Parameterized MLIR emission patterns
+
+The goal: watch your code transform through each nanopass phase, from syntax construction through typed tree overlay to MLIR generation.
 
 ### Delimited Continuation Debugging
 
@@ -113,7 +130,18 @@ The design calls for first-class debugging support for delimited continuations, 
 
 ### Multi-WebView Architecture
 
-Each major function is intended to run in its own WebView with its own JavaScript context. The editor, debugger, PSG visualizer, and terminal would be isolated, a crash in one wouldn't affect the others. This architecture also looks toward WebGPU compute in visualization WebViews without affecting editor responsiveness.
+Each major function is intended to run in its own WebView with its own JavaScript context. The editor, debugger, PSG visualizer, and terminal would be isolated - a crash in one wouldn't affect the others. This architecture also looks toward WebGPU compute in visualization WebViews without affecting editor responsiveness.
+
+### WRENStack Design-Time Experience
+
+Atelier integrates with [WRENStack.Tooling](https://github.com/speakeztechnologies/WRENStack.Tooling) to enhance the development experience for WRENStack applications:
+
+- **Source Maps** - Debug F# source, not generated JavaScript
+- **Signal Inspector** - Browser devtools integration for SolidJS signals
+- **Component Navigation** - Jump between F# component definitions and usage
+- **HMR State Preservation** - Hot reload without losing signal state
+
+These tools work together to bring the debugging experience closer to native F# development.
 
 ## Documentation
 
@@ -128,6 +156,7 @@ See the [docs/](./docs/) folder for detailed documentation:
 - [06_partas_solid.md](./docs/06_partas_solid.md): Partas.Solid, F# to SolidJS compilation
 - [07_lezer_parsing.md](./docs/07_lezer_parsing.md): Lezer, CodeMirror's incremental parsing foundation
 - [08_tooling_integration.md](./docs/08_tooling_integration.md): Integration with the Fidelity toolchain
+- [09_flow_loss_analysis.md](./docs/09_flow_loss_analysis.md): Data-flow parallelism analysis and hardware partnership strategy
 
 ## Related Projects
 
@@ -136,6 +165,8 @@ See the [docs/](./docs/) folder for detailed documentation:
 | [Firefly](https://github.com/speakeztechnologies/Firefly) | F# Native AOT compiler |
 | [FSNAC](https://github.com/speakeztechnologies/FsNativeAutoComplete) | F# Native language server |
 | [BAREWire](https://github.com/speakeztechnologies/BAREWire) | Schema-driven binary serialization |
+| [WRENStack.Tooling](https://github.com/speakeztechnologies/WRENStack.Tooling) | Design-time tooling for WRENStack applications |
+| [Partas.Solid](https://github.com/Partas/Partas.Solid) | F# → SolidJS via Fable |
 
 ## The Name
 

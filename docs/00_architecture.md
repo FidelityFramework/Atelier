@@ -4,7 +4,17 @@
 
 **W**ebView + **R**eactive + **E**mbedded + **N**ative
 
-WREN represents a fundamental rethinking of desktop application architecture. Rather than embedding a full browser runtime (Electron) or constraining ourselves to native-only UI toolkits (GTK widgets, Qt), WREN looks toward leveraging the platform's existing WebView infrastructure with a native F# backend.
+WREN represents a pragmatic approach to desktop application architecture. Rather than embedding a full browser runtime (Electron) or constraining ourselves to native-only UI toolkits (GTK widgets, Qt), WREN leverages the platform's existing WebView infrastructure with a Firefly-compiled native backend.
+
+### WRENStack in the Fidelity Ecosystem
+
+WRENStack is a **SpeakEZ product** that uses Fidelity/Firefly - it is not an extension of Fidelity itself. The architectural boundary is important:
+
+```
+Fidelity (UI-agnostic framework) ◄── uses (no coupling) ── WRENStack (product)
+```
+
+WRENStack is an interim solution for SpeakEZ's business needs while **FidelityUI** (a future native UI model) matures. Atelier uses WRENStack to bootstrap itself, demonstrating the pattern it supports.
 
 ## Why WREN?
 
@@ -57,9 +67,9 @@ flowchart TB
 
 Each platform provides these capabilities through different APIs, but the semantics are remarkably similar.
 
-### Layer 2: F# Native Abstraction
+### Layer 2: Firefly-Compiled Native Backend
 
-Atelier plans to abstract platform differences using F# discriminated unions and conditional compilation:
+Atelier plans to abstract platform differences using F# discriminated unions and conditional compilation. The backend is compiled by **Firefly** to native code - no .NET runtime dependency.
 
 ```fsharp
 type WebViewHandle =
@@ -75,7 +85,7 @@ type WebViewConfig = {
     Transparent: bool
 }
 
-// Platform-specific initialization
+// Platform-specific initialization via Fidelity.Platform bindings
 #if LINUX
 let create config = WebKitGTK (webkitgtk_create config)
 #elif MACOS
@@ -84,6 +94,8 @@ let create config = WKWebView (wkwebview_create config)
 let create config = WebView2 (webview2_create config)
 #endif
 ```
+
+**Key**: Platform operations are defined in **FNCS** (F# Native Compiler Services) as intrinsics. The `webkitgtk_create`, etc., functions resolve to platform-specific implementations via Alex bindings at compile time.
 
 ### Layer 3: IPC Protocol (BAREWire)
 
@@ -199,6 +211,31 @@ flowchart TB
 ```
 
 Each WebView runs in its own process (WebKit/Chromium architecture). This means heavy operations (debugging, build monitoring) should not freeze the editor UI.
+
+## Fidelity Architecture Integration
+
+Atelier's native backend follows Firefly's **Four Pillars** architecture:
+
+### The Photographer Principle
+
+Every compilation follows this pattern:
+1. **Nanopasses build the scene** - Enrich the PSG with coeffects and semantic information
+2. **The Zipper moves attention** - Navigate the graph structure, never dispatch
+3. **Active Patterns focus the lens** - Semantic classification, not string matching
+4. **Transfer snaps the picture** - Emit MLIR via parameterized Templates
+
+### PSG as the Foundation
+
+The Program Semantic Graph (PSG) is the single source of truth for Atelier's tooling:
+
+| Feature | PSG Usage |
+|---------|-----------|
+| Code navigation | Follow `ChildOf`, `DefUse` edges |
+| Debugging | Inspect `Coeffect` nodes for resource state |
+| Visualization | Render nanopass phases as graph transformations |
+| Diagnostics | Correlate errors with PSG node ranges |
+
+Atelier doesn't just *use* the PSG - it *visualizes* the nanopass pipeline, making compiler internals observable.
 
 ## Navigation
 

@@ -430,6 +430,7 @@ fi
 ## Navigation
 
 - Previous: [07_lezer_parsing.md](./07_lezer_parsing.md): Lezer, CodeMirror's incremental parsing foundation
+- Next: [09_flow_loss_analysis.md](./09_flow_loss_analysis.md): Data-flow parallelism analysis
 
 ## References
 

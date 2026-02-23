@@ -2,9 +2,33 @@
 
 ## Role in the Stack
 
-Partas.Solid provides F# bindings for SolidJS, compiled through Fable. Atelier plans to leverage this to enable the same F# types in both the native backend (compiled by Firefly) and the WebView frontend (compiled by Fable to JavaScript).
+Partas.Solid provides F# bindings for SolidJS, compiled through Fable. This is the **WebView frontend** layer of WRENStack applications.
 
-The architectural benefit: a single type definition could flow through both compilation targets, eliminating serialization mismatches at the IPC boundary.
+### Critical Architectural Boundary
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  WRENStack Frontend (WebView)                                    │
+│  ├── Partas.Solid (F# → SolidJS)                                │
+│  ├── Fable (F# → JavaScript)                                    │
+│  └── WRENStack.Tooling (source maps, signal inspector)          │
+│       ↑ Pure UI concerns - web technology                        │
+├─────────────────────────────────────────────────────────────────┤
+│       BAREWire IPC boundary (binary serialization)               │
+├─────────────────────────────────────────────────────────────────┤
+│  WRENStack Backend (Native)                                      │
+│  ├── Firefly Compiler (F# → MLIR → Native)                      │
+│  ├── Fidelity Framework (FNCS, PSG, coeffects)                  │
+│  └── Platform bindings (GTK, WebKit, filesystem)                │
+│       ↓ Core compiler/runtime concerns - native code             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**These are separate compilation pipelines:**
+- **Frontend**: F# → Fable → JavaScript (SolidJS in WebView)
+- **Backend**: F# → Firefly → MLIR → LLVM → Native binary
+
+The architectural benefit: shared F# *type definitions* can flow through both pipelines, but the code paths are completely separate. BAREWire handles serialization at the IPC boundary.
 
 ## What is Partas.Solid?
 
@@ -260,13 +284,68 @@ cd frontend
 # Fable compiles F# to JavaScript
 dotnet fable src/App.fsproj --outDir dist/js
 
-# Vite bundles and optimizes
+# Vite bundles and optimizes (with WRENStack.Tooling plugin)
 npx vite build
 
 # Output: dist/app.js (SolidJS application)
 ```
 
 The F# source files are transformed by Fable into JavaScript that imports from `solid-js`. The Partas.Solid library provides the types and functions that map to SolidJS's API. This pipeline represents our intended approach.
+
+## WRENStack.Tooling Integration
+
+The [WRENStack.Tooling](https://github.com/speakeztechnologies/WRENStack.Tooling) package enhances the Partas.Solid development experience without modifying the library itself:
+
+### Source Maps
+
+Debug F# source, not generated JavaScript:
+
+```fsharp
+// In browser devtools, breakpoints hit F# lines
+let Counter () =
+    let count, setCount = createSignal 0  // ← Set breakpoint here
+    // ...
+```
+
+WRENStack.Tooling generates Source Map v3 files that map JavaScript locations back to F# source positions.
+
+### Signal Inspector
+
+Browser devtools integration for SolidJS signals:
+
+```
+WRENStack Signals
+─────────────────
+🔵 count: 5
+   Source: Counter.fs:12
+   Dependents: doubled, CounterView
+
+🔵 diagnostics: [{...}]
+   Source: DiagnosticsList.fs:8
+   Dependents: ListView
+```
+
+The Signal Inspector hooks into `createSignal`, `createMemo`, etc., to expose signal state and dependency graphs.
+
+### Hot Module Replacement (HMR) State Preservation
+
+When code changes during development, signal state is preserved:
+
+```javascript
+// Before HMR: count = 5
+// After HMR: count = 5 (preserved!)
+```
+
+This prevents losing application state during iterative development.
+
+### Design Principles
+
+WRENStack.Tooling follows these principles:
+
+1. **Enhancement, not modification** - Works with unmodified Partas.Solid
+2. **Standalone value** - Each tool works independently
+3. **No Fidelity coupling** - Works with any backend (not just Firefly)
+4. **Dev-mode only overhead** - Zero production impact
 
 ## Why Not Other Options?
 
@@ -286,6 +365,21 @@ You could write raw Fable bindings to SolidJS, but Partas.Solid provides:
 - Proper handling of SolidJS's reactive primitives
 - Community maintenance and updates
 
+### Why not Fidelity/Firefly for the frontend?
+
+This question reveals the architectural boundary. Fidelity/Firefly compile F# to **native code**. The WebView runs **JavaScript**. These are fundamentally different targets:
+
+| Concern | Frontend (Partas.Solid) | Backend (Firefly) |
+|---------|-------------------------|-------------------|
+| Target | JavaScript in WebView | Native binary |
+| Compilation | Fable | FNCS → PSG → Alex → MLIR → LLVM |
+| Memory model | JavaScript GC | Compiler-managed (stack/arena) |
+| Type fidelity | JavaScript semantics | Native type fidelity |
+
+WRENStack bridges these with BAREWire IPC. Shared type *definitions* ensure the bridge is type-safe, but the execution environments remain separate.
+
+**Future**: FidelityUI may eventually provide a native UI model, eliminating the WebView layer entirely. WRENStack is the interim solution.
+
 ## Navigation
 
 - Previous: [05_webgpu.md](./05_webgpu.md): WebGPU compute integration
@@ -293,7 +387,7 @@ You could write raw Fable bindings to SolidJS, but Partas.Solid provides:
 
 ## Summary
 
-Partas.Solid offers:
+Partas.Solid + WRENStack.Tooling offers:
 
 | Capability | Mechanism |
 |------------|-----------|
@@ -302,9 +396,13 @@ Partas.Solid offers:
 | Shared types | Same F# types compile to native (Firefly) and JS (Fable) |
 | Fine-grained reactivity | SolidJS primitive bindings |
 | Library integration | Foundation for solid-codemirror, solid-dockview bindings |
+| **F# debugging** | Source maps via WRENStack.Tooling |
+| **Signal visibility** | Signal Inspector browser extension |
+| **HMR state preservation** | Enhanced Vite plugin |
 
 ## References
 
 - [Partas.Solid GitHub](https://github.com/Partas/Partas.Solid)
+- [WRENStack.Tooling](https://github.com/speakeztechnologies/WRENStack.Tooling)
 - [Fable](https://fable.io/): F# to JavaScript compiler
 - [SolidJS](https://www.solidjs.com/): Reactive UI library

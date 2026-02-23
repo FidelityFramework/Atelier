@@ -132,20 +132,29 @@ Atelier, designed for Fidelity, would:
 
 ## Feature 2: PSG Visualization with D3
 
-### The Program Semantic Graph
+### The Program Semantic Graph and the Four Pillars
 
-Firefly's PSG (Program Semantic Graph) is the compiler's intermediate representation:
+Firefly's PSG (Program Semantic Graph) is the compiler's intermediate representation, built through a **true nanopass pipeline**:
 
 ```
-F# Source → FCS → PSG → Nanopasses → Alex → MLIR → Native
+F# Source → FCS → PSG Construction (Phases 1-4) → Enrichment Nanopasses (Phase 5+) → Alex → MLIR → Native
 ```
 
-The PSG captures:
-- Syntax structure (from SynExpr)
-- Type information (from FSharpExpr)
-- Def-use relationships
-- Reachability information
-- SRTP resolutions
+The PSG embodies the **Four Pillars** architecture:
+
+| Pillar | PSG Manifestation |
+|--------|-------------------|
+| **Coeffects** (mise-en-place) | `NeedsCleanup`, `BorrowedRegion`, resource markers on nodes |
+| **Active Patterns** | Semantic classification of operation kinds, not string matching |
+| **Zipper** | The cursor that navigates the graph - viewer tracks its position |
+| **Templates** | Parameterized MLIR patterns shown in pipeline inspector |
+
+The PSG captures through progressive phases:
+- **Phase 1**: Structural construction (SynExpr → nodes + ChildOf edges)
+- **Phase 2**: Symbol correlation (FSharpSymbol attachments)
+- **Phase 3**: Soft-delete reachability (IsReachable marks - structure preserved!)
+- **Phase 4**: Typed tree overlay (Types, Constraints, SRTP resolution via Zipper)
+- **Phase 5+**: Enrichment nanopasses (def-use edges, operation classification)
 
 ### Envisioned PSG Viewer
 
@@ -266,20 +275,22 @@ WREN.onMessage "psg_node_selected" (fun nodeId ->
 )
 ```
 
-### Phase Comparison
+### Phase Comparison: The Photographer Principle in Action
 
-The PSG evolves through nanopass phases. The viewer would allow comparing phases:
+The PSG evolves through nanopass phases. The viewer would allow comparing phases, visualizing the **Photographer Principle**:
+
+> "Nanopasses build the scene, the Zipper moves attention, Active Patterns focus the lens, Transfer snaps the picture."
 
 ```mermaid
 flowchart TB
-    subgraph phase3["Phase 3 (Reachability)"]
+    subgraph phase3["Phase 3 (Soft-Delete Reachability)"]
         x3["[let x] (reachable)"]
         f3["[App f] (reachable)"]
-        g3["[App g] (unreachable)"]
+        g3["[App g] (unreachable, preserved)"]
         x3 --> f3 --> g3
     end
 
-    subgraph phase4["Phase 4 (Typed Tree)"]
+    subgraph phase4["Phase 4 (Typed Tree Overlay via Zipper)"]
         x4["[let x] (reachable)"]
         f4["[App f] (reachable)<br/>+ Type: int → string"]
         g4["[App g] (unreachable)<br/>+ SRTP: Resolved to String.Length"]
@@ -287,11 +298,13 @@ flowchart TB
     end
 ```
 
-Switching phases shows how the PSG gains information:
-- Phase 1-2: Structure only
-- Phase 3: Reachability marks
-- Phase 4: Type information, SRTP resolution
-- Phase 5+: Def-use edges, operation classification
+**Critical insight**: Phase 3 uses **soft-delete** (marks `IsReachable = false`) rather than physically removing nodes. This preserves graph structure for the Phase 4 Zipper to navigate and correlate typed tree information.
+
+Switching phases shows how the mise-en-place accumulates:
+- **Phase 1-2**: Structure construction (scene framing)
+- **Phase 3**: Reachability analysis (setting up the shot)
+- **Phase 4**: Typed tree overlay with Zipper correlation (focusing the lens)
+- **Phase 5+**: Enrichment nanopasses add edges, classify operations (final composition)
 
 ## Feature 3: Compilation Pipeline Inspector
 
@@ -318,11 +331,11 @@ This would allow developers to:
 - Learn compiler internals
 - Verify optimization decisions
 
-## Feature 4: Effect System Awareness
+## Feature 4: Coeffect Awareness
 
-### Visualizing Effects
+### Visualizing Coeffects
 
-Fidelity's effect system is designed to track computational effects:
+Fidelity uses **coeffects** (not just effects) to track resource requirements and computational context. Coeffects are "mise-en-place" - the compiler knows what resources are needed before code generation:
 
 ```fsharp
 // Effect-annotated code
@@ -361,9 +374,20 @@ flowchart LR
     effectblock -.-|"IO + Parse + Validation"| total["Inferred Effect"]
 ```
 
-### Effect Mismatch Diagnostics
+### Coeffect Types
 
-When effects don't compose correctly, diagnostics could appear as:
+Common coeffects Atelier would visualize:
+
+| Coeffect | Meaning | Compiler Action |
+|----------|---------|-----------------|
+| `NeedsCleanup` | Resource requires disposal | Emit cleanup at scope exit |
+| `BorrowedRegion` | Reference into scoped region | Track region lifetime |
+| `SyncPrimitive` | Requires synchronization | Emit memory barriers |
+| `SuspensionIndex` | Async suspension point | Generate coroutine state |
+
+### Coeffect Mismatch Diagnostics
+
+When coeffects don't compose correctly, diagnostics could appear as:
 
 ```mermaid
 flowchart TB
@@ -379,16 +403,20 @@ flowchart TB
 
 ## Summary
 
-Atelier's unique features would arise from deep integration with the Fidelity ecosystem:
+Atelier's unique features would arise from deep integration with the Fidelity ecosystem and the **Four Pillars** architecture:
 
-| Feature | Enabled By |
-|---------|-----------|
-| Continuation debugging | Fidelity's delimited continuation runtime |
-| PSG visualization | Direct access to Firefly's IR |
-| Pipeline inspection | Integration with all compilation phases |
-| Effect awareness | FNCS effect system |
+| Feature | Enabled By | Four Pillars Connection |
+|---------|-----------|------------------------|
+| Continuation debugging | Fidelity's delimited continuation runtime | Coeffects track suspension indices |
+| PSG visualization | Direct access to Firefly's nanopass pipeline | Zipper traversal is observable |
+| Pipeline inspection | Integration with all compilation phases | Templates show MLIR patterns |
+| Coeffect awareness | FNCS coefficient tracking | Mise-en-place visible in graph |
 
 These capabilities would be difficult or impossible in general-purpose editors because they require knowledge of specific compiler internals that only purpose-built tooling can provide.
+
+### The Self-Hosting Advantage
+
+Since Atelier is built with WRENStack (which uses Firefly), improvements to the compiler directly benefit the IDE. When a new nanopass is added, Atelier can immediately visualize it. When coeffect tracking improves, Atelier's diagnostics improve. This tight feedback loop accelerates both compiler and tooling development.
 
 ## Navigation
 
