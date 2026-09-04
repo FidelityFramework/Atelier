@@ -2,7 +2,7 @@
 
 ## Role in the Stack
 
-Partas.Solid provides F# bindings for SolidJS, compiled through Fable. This is the **WebView frontend** layer of WRENStack applications.
+Partas.Solid provides F# bindings for SolidJS, compiled through Fable. This is the **WebView frontend** layer of WRENStack applications as it stands today. Stated plainly: the front end is F# through Fable, which makes FSharp.Compiler.Service and the .NET SDK a build dependency of the toolchain's commercial home. That is interim. Composer's design of record names a second path to JavaScript, the JSIR pathway (Clef → CCS → PSG → Alex → JSIR ops → `jsir_gen --passes=hir2ast,ast2source`), and calls the WebView desktop wing a natural fit for it. Whether that pathway takes on a Solid-style reactive surface, so the front end can be Clef and the .NET dependency drops out, is an open decision. Until it is taken, this document describes the Fable form and marks where the JSIR form would differ.
 
 ### Critical Architectural Boundary
 
@@ -17,18 +17,19 @@ Partas.Solid provides F# bindings for SolidJS, compiled through Fable. This is t
 │       BAREWire IPC boundary (binary serialization)               │
 ├─────────────────────────────────────────────────────────────────┤
 │  WRENStack Backend (Native)                                      │
-│  ├── Firefly Compiler (F# → MLIR → Native)                      │
-│  ├── Fidelity Framework (FNCS, PSG, coeffects)                  │
+│  ├── Composer (Clef → MLIR → Native)                            │
+│  ├── Fidelity Framework (CCS, PSG, coeffects)                   │
 │  └── Platform bindings (GTK, WebKit, filesystem)                │
 │       ↓ Core compiler/runtime concerns - native code             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**These are separate compilation pipelines:**
-- **Frontend**: F# → Fable → JavaScript (SolidJS in WebView)
-- **Backend**: F# → Firefly → MLIR → LLVM → Native binary
+**These are separate compilation pipelines today:**
+- **Frontend (interim)**: F# → Fable → JavaScript (SolidJS in WebView); the .NET SDK dependency lives here
+- **Frontend (candidate)**: Clef → CCS → PSG → Alex → JSIR → JavaScript, pending the reactive-surface decision
+- **Backend**: Clef → Composer → MLIR → LLVM → Native binary
 
-The architectural benefit: shared F# *type definitions* can flow through both pipelines, but the code paths are completely separate. BAREWire handles serialization at the IPC boundary.
+The runtime boundary holds under either front-end path: JavaScript in the WebView, native code in the host. What changes with the JSIR path is that one compiler and one PSG produce both sides. Shared *type definitions* flow through both pipelines either way, and BAREWire handles serialization at the IPC boundary.
 
 ## What is Partas.Solid?
 
@@ -73,10 +74,11 @@ function Counter() {
 
 ### Type Flow Example
 
-The same F# types compile to both targets:
+The same type definitions compile to both targets. The vocabulary that crosses the bridge is a protocol module both pipelines compile, exactly as WrenHello does with `src/Shared/Protocol.fs`. For PSG-derived facts (diagnostics, nodes, edges, symbols, frames) that module is owned by CCS or Lattice and derived from the PSG's own discriminated union definitions; Atelier imports it and declares no PSG-shaped types of its own. A host that defines what a node "is" is one step from filling the fields itself.
 
 ```fsharp
-// Shared types (used by both native backend and WebView frontend)
+// Protocol module (CCS/Lattice-owned; compiled by both the native backend and the WebView frontend)
+// Illustrative shapes: the schema is derived from the PSG DUs, not authored here
 type Diagnostic = {
     Range: SourceRange
     Severity: DiagnosticSeverity
@@ -85,24 +87,26 @@ type Diagnostic = {
 }
 
 type PSGNode = {
-    Id: NodeId
-    Kind: string
+    Id: NodeId              // identity as CCS assigns it
+    Kind: NodeKind          // the PSG's own DU, not a string
     Label: string
-    Type: string option
+    Type: string option     // a rendered form, produced by CCS
     Range: SourceRange
-    IsReachable: bool
+    IsReachable: bool       // a saturation result, never computed host-side
 }
 
-// Backend (F# Native via Firefly)
-let sendDiagnostics (webview: WebViewHandle) (diagnostics: Diagnostic[]) =
-    WREN.send webview "diagnostics" diagnostics
+// Backend (native via Composer): relays what the service produced
+let sendGraph (webview: WebViewHandle) (graph: PsgProjection) =
+    WREN.send webview "load_psg" graph
 
-// Frontend (F# via Fable + Partas.Solid)
+// Frontend (F# via Fable + Partas.Solid, interim): renders
 let DiagnosticsList () =
     let diagnostics, setDiagnostics = createSignal<Diagnostic[]> [||]
 
     onMount (fun () ->
-        WREN.onMessage "diagnostics" setDiagnostics
+        // Diagnostics reach the editor through the LSP client (publishDiagnostics);
+        // a list panel subscribes to the same notification, not to a second feed
+        Lsp.onPublishDiagnostics setDiagnostics
     )
 
     ul [] [
@@ -114,7 +118,7 @@ let DiagnosticsList () =
     ]
 ```
 
-The `Diagnostic` type is defined once. Firefly compiles it to a native struct. Fable compiles it to a JavaScript object. BAREWire handles serialization at the boundary.
+The `Diagnostic` type is defined once, in the protocol module. Composer compiles it to a native struct. Fable compiles it to a JavaScript object today; the JSIR path would compile the same declaration for the WebView side. BAREWire handles serialization at the boundary. No such projection schema exists yet; it is the first CCS/Lattice deliverable Atelier depends on. Node identity across edits is not stable today, and which of these facts CCS should carry is an open decision.
 
 ### SolidJS Reactive Primitives
 
@@ -190,7 +194,7 @@ Partas.Solid provides the foundation, but Atelier envisions bindings for:
 The following illustrates how library bindings might be structured:
 
 ```fsharp
-// Fable binding for solid-codemirror
+// Interim Fable binding for solid-codemirror (F# through Fable); a Clef declaration carrying [<JsImport>] under the JSIR path, if that decision lands
 module SolidCodeMirror
 
 open Fable.Core
@@ -273,11 +277,29 @@ flowchart TB
     appcode --> bindings --> partas --> fable --> solid
 ```
 
-Partas.Solid maps F# constructs to SolidJS primitives. The layers above it (library bindings, application code) are intended to be written in F# and compiled through this stack.
+Partas.Solid maps F# constructs to SolidJS primitives. The layers above it (library bindings, application code) are written in F# and compiled through this stack in the interim form. The Fable node is the .NET dependency, and it is the node Composer's JSIR pathway would replace if the reactive-surface decision lands.
 
 ## Anticipated Build Pipeline
 
+Interim, as WrenHello scripts it today (no Composer build orchestration exists yet):
+
 ```bash
+# Frontend build (interim: F# through Fable; requires the .NET SDK)
+cd frontend
+
+# Fable compiles F# to JavaScript
+dotnet fable src/App.fsproj --outDir dist/js
+
+# Vite bundles and optimizes (with WRENStack.Tooling plugin)
+npx vite build
+
+# Output: dist/app.js (SolidJS application)
+```
+
+The F# source files are transformed by Fable into JavaScript that imports from `solid-js`. The Partas.Solid library provides the types and functions that map to SolidJS's API.
+
+If the JSIR decision lands, the build collapses to one compiler: Composer compiles the Clef sources from one PSG twice, the LLVM pathway for the host and the JSIR pathway (`jsir_gen --passes=hir2ast,ast2source`) for the WebView bundle, with the bundler and the weld into the binary's read-only data unchanged. The .NET SDK is then not a prerequisite. That form is design, not build.
+
 # Frontend build
 cd frontend
 
@@ -294,7 +316,7 @@ The F# source files are transformed by Fable into JavaScript that imports from `
 
 ## WRENStack.Tooling Integration
 
-The [WRENStack.Tooling](https://github.com/speakeztechnologies/WRENStack.Tooling) package enhances the Partas.Solid development experience without modifying the library itself:
+The [WRENStack.Tooling](https://github.com/speakeztechnologies/WRENStack.Tooling) package enhances the Partas.Solid development experience without modifying the library itself. It is bound to the Fable pipeline; under the candidate JSIR path a counterpart (source maps from PSG ranges) would be needed:
 
 ### Source Maps
 
@@ -344,7 +366,7 @@ WRENStack.Tooling follows these principles:
 
 1. **Enhancement, not modification** - Works with unmodified Partas.Solid
 2. **Standalone value** - Each tool works independently
-3. **No Fidelity coupling** - Works with any backend (not just Firefly)
+3. **No Fidelity coupling** - Works with any backend (not just Composer)
 4. **Dev-mode only overhead** - Zero production impact
 
 ## Why Not Other Options?
@@ -365,16 +387,16 @@ You could write raw Fable bindings to SolidJS, but Partas.Solid provides:
 - Proper handling of SolidJS's reactive primitives
 - Community maintenance and updates
 
-### Why not Fidelity/Firefly for the frontend?
+### Why Fable today, and JSIR as the candidate destination
 
-This question reveals the architectural boundary. Fidelity/Firefly compile F# to **native code**. The WebView runs **JavaScript**. These are fundamentally different targets:
+Composer compiles Clef to native code through the LLVM pathway and, by its design of record, to JavaScript through the JSIR pathway. The WebView runs JavaScript; the host runs native code. That runtime boundary is real under either front-end path. The compilation boundary is not fixed: today the front end is F# through Fable because Partas.Solid's reactive surface exists there, and whether the JSIR pathway carries a reactive surface of its own is undecided.
 
-| Concern | Frontend (Partas.Solid) | Backend (Firefly) |
-|---------|-------------------------|-------------------|
+| Concern | Frontend | Backend (Composer) |
+|---------|----------|-------------------|
 | Target | JavaScript in WebView | Native binary |
-| Compilation | Fable | FNCS → PSG → Alex → MLIR → LLVM |
+| Compilation | Fable (interim); Composer's JSIR pathway (candidate) | CCS → PSG → Alex → MLIR → LLVM |
 | Memory model | JavaScript GC | Compiler-managed (stack/arena) |
-| Type fidelity | JavaScript semantics | Native type fidelity |
+| Type fidelity | .NET types erased to JS (Fable); Clef's types, target-profile-resolved (JSIR) | Native type fidelity |
 
 WRENStack bridges these with BAREWire IPC. Shared type *definitions* ensure the bridge is type-safe, but the execution environments remain separate.
 
@@ -391,9 +413,9 @@ Partas.Solid + WRENStack.Tooling offers:
 
 | Capability | Mechanism |
 |------------|-----------|
-| F# frontend code | SolidJS bindings via Fable |
+| F# frontend code | SolidJS bindings via Fable (interim; a .NET SDK dependency) |
 | Type-safe UI | F# type system preserved through compilation |
-| Shared types | Same F# types compile to native (Firefly) and JS (Fable) |
+| Shared types | One protocol module, CCS/Lattice-owned for PSG facts, compiled to native (Composer) and JS (Fable today) |
 | Fine-grained reactivity | SolidJS primitive bindings |
 | Library integration | Foundation for solid-codemirror, solid-dockview bindings |
 | **F# debugging** | Source maps via WRENStack.Tooling |

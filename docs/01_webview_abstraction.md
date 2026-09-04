@@ -2,7 +2,7 @@
 
 ## WRY Overview
 
-[WRY](https://github.com/tauri-apps/wry) (WebView Rendering librarY) is the Rust library that powers Tauri's cross-platform WebView support. Studying WRY's architecture provides valuable lessons for Atelier's planned F# Native implementation.
+[WRY](https://github.com/tauri-apps/wry) (WebView Rendering librarY) is the Rust library that powers Tauri's cross-platform WebView support. Studying WRY's architecture provides valuable lessons for Atelier's planned native implementation.
 
 ## WRY's Abstraction Strategy
 
@@ -56,15 +56,15 @@ Each platform module exports the same public API, but the implementations differ
 2. **No vtable overhead**: Direct calls, no dynamic dispatch
 3. **Platform-specific extensions**: Each platform can expose unique features
 
-## Proposed F# Native Adaptation
+## Proposed Native Adaptation
 
 ### Option 1: Discriminated Union (Runtime Selection)
 
 ```fsharp
 type WebViewHandle =
-    | WebKitGTK of nativeint
-    | WKWebView of nativeint
-    | WebView2 of nativeint
+    | WebKitGTK of CHandle<WebKitWebView>   // opaque boundary handle from the Farscape-generated binding; never an address
+    | WKWebView of CHandle<WKWebView>
+    | WebView2 of CHandle<ICoreWebView2>
 
 let loadUrl handle url =
     match handle with
@@ -118,40 +118,40 @@ module WebView =
 
 ## Platform-Specific Patterns from WRY
 
-The following examples illustrate how Atelier could adapt WRY's patterns for F# Native.
+The following examples illustrate how Atelier could adapt WRY's patterns for the native backend.
 
 ### WebKitGTK (Linux)
 
 Key files in WRY: `src/webkitgtk/mod.rs`, `src/webkitgtk/web_context.rs`
 
 ```fsharp
-// F# Native adaptation
+// Native adaptation
 module WebKitGTK =
     [<DllImport("libwebkit2gtk-4.1.so")>]
-    extern nativeint webkit_web_view_new()
+    extern CHandle<WebKitWebView> webkit_web_view_new()
 
     [<DllImport("libwebkit2gtk-4.1.so")>]
-    extern void webkit_web_view_load_uri(nativeint webview, string uri)
+    extern void webkit_web_view_load_uri(CHandle<WebKitWebView> webview, string uri)
 
     [<DllImport("libwebkit2gtk-4.1.so")>]
     extern void webkit_web_view_run_javascript(
-        nativeint webview,
+        CHandle<WebKitWebView> webview,
         string script,
-        nativeint cancellable,
-        nativeint callback,
-        nativeint userData)
+        Option<CHandle<GCancellable>> cancellable,
+        FnPtr<unit -> unit> callback,
+        Option<CHandle<unit>> userData)
 
     // Script message handler registration
     [<DllImport("libwebkit2gtk-4.1.so")>]
-    extern nativeint webkit_user_content_manager_register_script_message_handler(
-        nativeint manager,
+    extern CHandle<WebKitUserContentManager> webkit_user_content_manager_register_script_message_handler(
+        CHandle<WebKitUserContentManager> manager,
         string name)
 ```
 
 **WebKitGTK IPC Pattern:**
 ```javascript
 // Frontend sends message
-window.webkit.messageHandlers.wrendit.postMessage({
+window.webkit.messageHandlers.wren.postMessage({
     type: "lsp_request",
     payload: binaryData
 })
@@ -159,7 +159,7 @@ window.webkit.messageHandlers.wrendit.postMessage({
 
 ```fsharp
 // Backend receives via signal
-let handleScriptMessage (manager: nativeint) (result: nativeint) =
+let handleScriptMessage (manager: CHandle<WebKitUserContentManager>) (result: CHandle<JSCValue>) =
     let value = webkit_javascript_result_get_js_value result
     let message = jsc_value_to_string value
     processMessage message
@@ -172,10 +172,10 @@ Key files in WRY: `src/wkwebview/mod.rs`, `src/wkwebview/class/`
 WRY uses Objective-C runtime interop:
 
 ```fsharp
-// F# Native adaptation (conceptual)
+// Native adaptation (conceptual)
 module WKWebView =
     [<DllImport("libobjc.dylib")>]
-    extern nativeint objc_msgSend(nativeint self, nativeint sel, ...)
+    extern CHandle<NSObject> objc_msgSend(CHandle<NSObject> self, CHandle<Selector> sel, ...)
 
     let WKWebView_class = objc_getClass "WKWebView"
     let alloc_sel = sel_registerName "alloc"
@@ -186,7 +186,7 @@ module WKWebView =
 **WKWebView IPC Pattern:**
 ```javascript
 // Frontend sends message
-window.webkit.messageHandlers.wrendit.postMessage(binaryData)
+window.webkit.messageHandlers.wren.postMessage(binaryData)
 ```
 
 ```fsharp
@@ -207,14 +207,14 @@ Key files in WRY: `src/webview2/mod.rs`
 WebView2 uses COM interfaces:
 
 ```fsharp
-// F# Native adaptation (conceptual)
+// Native adaptation (conceptual)
 module WebView2 =
     [<DllImport("WebView2Loader.dll")>]
     extern int CreateCoreWebView2EnvironmentWithOptions(
         string browserExecutableFolder,
         string userDataFolder,
-        nativeint options,
-        nativeint handler)
+        CHandle<ICoreWebView2EnvironmentOptions> options,
+        CHandle<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler> handler)
 
     // ICoreWebView2 interface methods
     let navigate webview url =
@@ -260,7 +260,7 @@ module IPC =
         #endif
 
     let sendToFrontend (webview: WebViewHandle) (data: byte[]) =
-        let script = sprintf "window.__wrendit_receive(%A)" (toBase64 data)
+        let script = sprintf "window.__wren_receive(%A)" (toBase64 data)
         executeScript webview script
 ```
 
@@ -274,8 +274,8 @@ const WREN = {
     send(type, payload) {
         const encoded = BAREWire.encode({ type, payload })
         // Platform detection
-        if (window.webkit?.messageHandlers?.wrendit) {
-            window.webkit.messageHandlers.wrendit.postMessage(encoded)
+        if (window.webkit?.messageHandlers?.wren) {
+            window.webkit.messageHandlers.wren.postMessage(encoded)
         } else if (window.chrome?.webview) {
             window.chrome.webview.postMessage(encoded)
         }
@@ -287,7 +287,7 @@ const WREN = {
 }
 
 // Called by native side
-window.__wrendit_receive = (base64Data) => {
+window.__wren_receive = (base64Data) => {
     const decoded = BAREWire.decode(atob(base64Data))
     const handler = WREN.handlers.get(decoded.type)
     if (handler) handler(decoded.payload)
@@ -299,28 +299,28 @@ window.__wrendit_receive = (base64Data) => {
 WRY supports custom URL protocols for loading local resources. Atelier plans to leverage similar mechanisms:
 
 ```fsharp
-// Register wrendit:// protocol
+// Register the stack's default wren:// protocol; an application registers its own scheme in the same way (Atelier registers atelier://app/, see 04_multi_webview.md)
 module CustomProtocol =
     let register (webview: WebViewHandle) =
         let handler (request: ProtocolRequest) =
             match request.Uri with
-            | uri when uri.StartsWith("wrendit://app/") ->
-                let path = uri.Substring("wrendit://app/".Length)
+            | uri when uri.StartsWith("wren://app/") ->
+                let path = uri.Substring("wren://app/".Length)
                 let content = loadLocalFile path
                 { StatusCode = 200; MimeType = guessMimeType path; Body = content }
             | _ ->
                 { StatusCode = 404; MimeType = "text/plain"; Body = "Not found" }
 
         #if LINUX
-        WebKitGTK.registerUriScheme webview "wrendit" handler
+        WebKitGTK.registerUriScheme webview "wren" handler
         #elif MACOS
-        WKWebView.registerSchemeHandler webview "wrendit" handler
+        WKWebView.registerSchemeHandler webview "wren" handler
         #elif WINDOWS
-        WebView2.addWebResourceRequestedFilter webview "wrendit://*" handler
+        WebView2.addWebResourceRequestedFilter webview "wren://*" handler
         #endif
 ```
 
-This would allow the frontend to load resources via `wrendit://app/index.html` without file:// security restrictions.
+This would allow the frontend to load resources via `wren://app/index.html` without file:// security restrictions.
 
 ## Key Takeaways from WRY
 

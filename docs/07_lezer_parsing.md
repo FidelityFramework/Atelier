@@ -14,7 +14,7 @@ flowchart TB
 ```
 
 Understanding Lezer is relevant for Atelier's planned features:
-- Writing language support for F#
+- Writing language support for Clef
 - Interpreting syntax trees for features like code folding
 - Debugging highlighting issues
 - Performance tuning for large files
@@ -180,26 +180,26 @@ const indentTokenizer = new ExternalTokenizer((input, stack) => {
 })
 ```
 
-F#'s significant whitespace would require this approach.
+Clef's significant whitespace (ML-family, like F#'s) would require this approach.
 
-## F# Language Support Options
+## Clef Language Support Options
 
-The following outlines potential approaches for F# support in Atelier.
+The following outlines potential approaches for Clef support in Atelier. Whatever is chosen feeds colouring, folding and bracket configuration only; structure and meaning come from the Clef Compiler Service through Lattice.
 
 ### Option 1: Full Lezer Grammar
 
-Write a complete grammar for F#. Challenges include:
+Write a complete Lezer grammar for Clef. This is a second grammar of the language beside CCS's parser, and every construct it mis-parses is a visible divergence to maintain by hand. Challenges include:
 
 - **Significant whitespace**: Requires external tokenizer with indentation tracking
 - **Computation expressions**: Context-dependent keywords (`let!`, `do!`, `return!`)
 - **Type syntax**: Generic constraints, SRTPs, measure types
 - **Preprocessor directives**: `#if`, `#else`, conditional compilation
 
-This is substantial work. OCaml has a [Lezer grammar](https://github.com/ocaml/tree-sitter-ocaml) (via Tree-sitter) that could inform an F# implementation.
+This is substantial work. OCaml has a [Lezer grammar](https://github.com/ocaml/tree-sitter-ocaml) (via Tree-sitter) that could inform a Clef implementation, but any Lezer grammar should be generated from or conformance-tested against CCS's grammar rather than authored independently.
 
 ### Option 2: TextMate Grammar via Legacy Mode
 
-CodeMirror's `@codemirror/legacy-modes` supports TextMate grammars. F# has an existing TextMate grammar (used by VSCode).
+CodeMirror's `@codemirror/legacy-modes` supports TextMate grammars. Clef has an existing TextMate grammar (`clef-grammar`, derived from the F# grammar Ionide uses, already consumed by lattice-vscode).
 
 ```javascript
 import { StreamLanguage } from "@codemirror/language"
@@ -212,7 +212,7 @@ Produces a flat token stream, not a tree. Sufficient for basic highlighting.
 
 ### Option 3: LSP Semantic Tokens
 
-FSNAC provides semantic token information. CodeMirror can display these:
+CAC provides semantic token information. CodeMirror can display these:
 
 ```javascript
 import { lspSemanticTokens } from "@codemirror/lsp-client"
@@ -220,7 +220,7 @@ import { lspSemanticTokens } from "@codemirror/lsp-client"
 // Semantic tokens from LSP override local highlighting
 const extensions = [
   fsharpLanguage,  // Basic highlighting (TextMate)
-  lspSemanticTokens()  // Enhanced highlighting from FSNAC
+  lspSemanticTokens()  // Enhanced highlighting from CAC
 ]
 ```
 
@@ -231,7 +231,7 @@ This layers LSP intelligence over basic highlighting.
 The current thinking favors a phased approach:
 
 1. **Start with TextMate**: Immediate basic highlighting
-2. **Add LSP semantic tokens**: FSNAC provides accurate highlighting
+2. **Add LSP semantic tokens**: CAC provides accurate highlighting
 3. **Consider Lezer grammar later**: If tree-based features (smart folding, structural navigation) prove valuable
 
 The LSP already provides semantic understanding. A Lezer grammar could add local, offline tree access; useful but not essential for an initial implementation.

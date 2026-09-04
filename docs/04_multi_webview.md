@@ -29,7 +29,7 @@ Atelier is designed to use multiple WebView instances, each running in its own p
 
 ```mermaid
 flowchart TB
-    subgraph coordinator["F# Native Coordinator"]
+    subgraph coordinator["Native Coordinator"]
         editormgr["Editor Manager"]
         debugeng["Debug Engine"]
         resmgr["Resource Monitor"]
@@ -81,7 +81,7 @@ let createEditorWebView () =
         Transparent = false
     }
 
-    webview.LoadUrl "wrendit://app/editor.html"
+    webview.LoadUrl "atelier://app/editor.html"
     webview.AddMessageHandler "editor" handleEditorMessage
 
     { Handle = webview; Dockview = None; OpenEditors = Map.empty; ActiveFile = None }
@@ -96,7 +96,7 @@ type DebugWebView = {
     Handle: WebViewHandle
     ActiveSession: DebugSession option
     Breakpoints: Set<SourceLocation>
-    Continuations: Map<ContinuationId, ContinuationInfo>
+    Frames: Map<FrameId, FrameInfo>   // suspension frames, rendered from a CCS-owned projection
 }
 
 let createDebugWebView () =
@@ -108,10 +108,10 @@ let createDebugWebView () =
         Transparent = false
     }
 
-    webview.LoadUrl "wrendit://app/debugger.html"
+    webview.LoadUrl "atelier://app/debugger.html"
     webview.AddMessageHandler "debug" handleDebugMessage
 
-    { Handle = webview; ActiveSession = None; Breakpoints = Set.empty; Continuations = Map.empty }
+    { Handle = webview; ActiveSession = None; Breakpoints = Set.empty; Frames = Map.empty }
 ```
 
 **Why separate?**
@@ -121,6 +121,8 @@ let createDebugWebView () =
 - Potential for runaway debug targets
 - Should never freeze the editor
 
+**What it renders, and who owns it.** The frames the panel shows are the suspension recipe's frames as the PSG carries them (segments at cuts, a frame environment node, a delimiter edge per cut) and as Composer witnesses them (a discriminant and a byte frame). Symbol residence and layout offsets for a session, and source ranges for breakpoints, are graph facts of the same kind. All of these are CCS-owned contract items: none is exported today, the recipe itself is scheduled work, and no debug adapter exists. The panel is a view over that projection when it lands; it computes nothing of its own.
+
 ### PSG Visualization WebView
 
 D3-based graph rendering in its own WebView:
@@ -128,9 +130,10 @@ D3-based graph rendering in its own WebView:
 ```fsharp
 type PSGWebView = {
     Handle: WebViewHandle
-    CurrentPSG: PSG option
+    Graph: PsgProjection option         // CCS-serialised projection of the graph; read-only here
     CurrentPhase: int
     SelectedNode: NodeId option
+    Layout: Map<NodeId, Position>       // viewer state; never written back to the graph
 }
 
 let createPSGWebView () =
@@ -142,10 +145,10 @@ let createPSGWebView () =
         Transparent = false
     }
 
-    webview.LoadUrl "wrendit://app/psg-viewer.html"
+    webview.LoadUrl "atelier://app/psg-viewer.html"
     webview.AddMessageHandler "psg" handlePSGMessage
 
-    { Handle = webview; CurrentPSG = None; CurrentPhase = 0; SelectedNode = None }
+    { Handle = webview; Graph = None; CurrentPhase = 0; SelectedNode = None; Layout = Map.empty }
 ```
 
 **Why separate?**
@@ -153,7 +156,9 @@ let createPSGWebView () =
 - D3 force simulations are CPU-intensive
 - Large PSGs can have thousands of nodes
 - Layout computation shouldn't block editing
-- Can be updated in background after compilation
+- Can be updated in background after saturation
+
+The projection's schema (nodes, hyperedges, per-phase provenance, reachability) is a CCS-owned contract item; no export exists today. The layout map is keyed by node identity, which does not survive re-elaboration today (knowledge-layer/04_temporal_ledger.md); whether CCS should carry a stable identity is an open decision.
 
 ### Terminal WebView
 
@@ -162,7 +167,7 @@ xterm.js in its own WebView:
 ```fsharp
 type TerminalWebView = {
     Handle: WebViewHandle
-    PTY: nativeint  // Master PTY fd
+    PTY: int  // master PTY file descriptor
     Pid: int        // Shell process
 }
 
@@ -178,7 +183,7 @@ let createTerminalWebView () =
     // Create PTY
     let (masterFd, childPid) = PTY.fork "/bin/bash" 24 80
 
-    webview.LoadUrl "wrendit://app/terminal.html"
+    webview.LoadUrl "atelier://app/terminal.html"
     webview.AddMessageHandler "terminal" (handleTerminalMessage masterFd)
 
     // Start reading from PTY
@@ -198,7 +203,7 @@ let createTerminalWebView () =
 
 ### Central Coordinator
 
-The F# Native backend would coordinate all WebViews:
+The native backend would coordinate all WebViews. It holds one connection to one compiler-service instance: CAC, the ClefAutoComplete server, over the PSG that CCS builds and saturates. There is no second compiler in the process. Every editor-facing fact is witnessed by CAC once, and a compile is a request to that same service.
 
 ```fsharp
 type AtelierApp = {
@@ -206,8 +211,7 @@ type AtelierApp = {
     Debug: DebugWebView option
     PSG: PSGWebView option
     Terminals: TerminalWebView list
-    LSPClient: LSPClient
-    Compiler: CompilerInstance
+    Lattice: LatticeClient   // the one CCS instance, reached through CAC
 }
 
 module Coordinator =
@@ -221,8 +225,7 @@ module Coordinator =
             Debug = None
             PSG = None
             Terminals = []
-            LSPClient = LSPClient.connect "fsnac"
-            Compiler = Compiler.create ()
+            Lattice = LatticeClient.connect ()
         }
 
     let openDebugger () =
@@ -247,6 +250,8 @@ module Coordinator =
         | None -> ()
 ```
 
+Today CAC is a .NET process built on FSharp.Compiler.Service; the coordinator would reach it as a child process speaking LSP until the Lattice migration puts it on CCS. The in-process form is the daemon 11_native_reflection.md sketches: one process, a PSG actor owning the graph, an LSP actor serving CAC's surface, Atelier's panes reading the same graph. `LatticeClient` stands for that connection in either form.
+
 ### Cross-WebView Communication
 
 WebViews would communicate through the native coordinator:
@@ -256,7 +261,7 @@ flowchart TB
     editorwv["Editor WebView"]
     debugwv["Debug WebView"]
 
-    subgraph coordinator["F# Native Coordinator"]
+    subgraph coordinator["Native Coordinator"]
         handler["handleMessage:<br/>match msg.Type with<br/>| 'set_breakpoint' →<br/>    Breakpoints.add loc<br/>    Debug.send 'breakpoint_added'"]
     end
 
@@ -276,28 +281,35 @@ let handleEditorMessage (msg: Message) =
         | Some debug -> debug.Send "breakpoint_added" loc
         | None -> ()
 
+    | "lsp_request" ->
+        // The editor's LSP client, tunnelled to CAC. Responses and notifications
+        // (publishDiagnostics among them) return on "lsp_response".
+        app.Lattice.Forward msg.Payload (fun reply -> app.Editor.Send "lsp_response" reply)
+
     | "open_psg_viewer" ->
         openPSGViewer ()
-        // Send current PSG
-        match app.Compiler.CurrentPSG with
-        | Some psg ->
-            app.PSG.Value.Send "load_psg" psg
-        | None -> ()
+        // Ask the same service for its current projection
+        async {
+            let! graph = app.Lattice.RequestGraph ()
+            app.PSG.Value.Send "load_psg" graph
+        } |> Async.Start
 
     | "compile" ->
+        // A request to the one service, not a second compiler. Saturation
+        // republishes diagnostics through the LSP tunnel on its own; the
+        // coordinator relays only the graph projection.
         let file = msg.Payload |> deserialize<string>
         async {
-            let! psg = app.Compiler.Compile file
-            // Update PSG viewer if open
+            let! graph = app.Lattice.RequestSaturation file
             match app.PSG with
-            | Some viewer -> viewer.Send "load_psg" psg
+            | Some viewer -> viewer.Send "load_psg" graph
             | None -> ()
-            // Send diagnostics to editor
-            app.Editor.Send "diagnostics" psg.Diagnostics
         } |> Async.Start
 
     | _ -> ()
 ```
+
+`RequestGraph` and `RequestSaturation` stand for a CCS-owned contract item: a command that triggers saturation on the service CAC witnesses and returns the graph projection. Nothing of the kind exists today; Composer offers `composer compile` as a CLI and PSG dumps as CLI artefacts, with no library or daemon API.
 
 ### Event Broadcasting
 
@@ -408,20 +420,21 @@ setInterval flushInterval (fun () ->
 Don't send data to WebViews that don't need it:
 
 ```fsharp
-let compilationComplete psg diagnostics =
-    // Always: Editor needs diagnostics
-    app.Editor.Send "diagnostics" diagnostics
+let saturationComplete (graph: PsgProjection) =
+    // Editor: nothing to send. Its diagnostics came through the LSP tunnel
+    // as publishDiagnostics, from the same saturation.
 
     // Only if open: PSG viewer
     match app.PSG with
     | Some viewer when viewer.IsVisible ->
-        viewer.Send "load_psg" psg
+        viewer.Send "load_psg" graph
     | _ -> ()
 
-    // Only if debugging: Debug WebView
+    // Only if debugging: tell the debugger the graph moved; it re-requests
+    // the frame and residence projection it renders from the same service
     match app.Debug with
     | Some debug when debug.ActiveSession.IsSome ->
-        debug.Send "symbols_updated" psg.Symbols
+        debug.Send "graph_updated" graph.Version
     | _ -> ()
 ```
 
@@ -468,7 +481,7 @@ flowchart LR
 
     subgraph mon3["Monitor 3"]
         subgraph debugwv["Debug WebView"]
-            cont["Continuations"]
+            cont["Suspension frames"]
             vars["Variables"]
             stack["Call Stack"]
         end
@@ -488,7 +501,7 @@ The multi-WebView architecture would provide:
 | Flexibility | On-demand WebView creation |
 | Multi-monitor | True separate windows |
 
-The F# Native coordinator would manage lifecycle, routing, and state synchronization, enabling the benefits of multiple processes without the complexity leaking into the frontend code.
+The Native Coordinator would manage lifecycle, routing, and state synchronization, enabling the benefits of multiple processes without the complexity leaking into the frontend code. It holds one connection to one compiler service; every WebView is a view over the graph that service owns.
 
 ## Navigation
 

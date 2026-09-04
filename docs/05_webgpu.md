@@ -15,7 +15,7 @@ Atelier looks toward WebGPU for performance-critical operations. The following u
 
 ### Use Case 1: PSG Graph Layout
 
-Large PSGs can have thousands of nodes. Force-directed graph layout (D3's default) is O(n²) per iteration. GPU compute could parallelize this:
+Large PSGs can have thousands of nodes. Force-directed graph layout (D3's default) is O(n²) per iteration. GPU compute could parallelize this. The kernel consumes the node and edge lists of the projection CCS serialises and produces positions that live in the viewer; the graph itself is never written:
 
 ```wgsl
 // Force calculation compute shader
@@ -59,34 +59,9 @@ fn calculateForces(
 | 5,000 | 400ms/iter | 2ms/iter |
 | 10,000 | 1600ms/iter | 8ms/iter |
 
-### Use Case 2: Syntax Highlighting
+### Use Case 2: Fuzzy Matching
 
-Large files could benefit from GPU-accelerated tokenization:
-
-```wgsl
-// Parallel tokenization
-@compute @workgroup_size(256)
-fn tokenize(
-    @builtin(global_invocation_id) id: vec3<u32>
-) {
-    let charIdx = id.x;
-    if (charIdx >= textLength) { return; }
-
-    // State machine transition
-    let char = text[charIdx];
-    let prevState = states[charIdx - 1]; // Or initial state
-    let newState = transitionTable[prevState * 256 + char];
-
-    states[charIdx] = newState;
-    tokenTypes[charIdx] = stateToToken[newState];
-}
-```
-
-This would be speculative execution; some tokens span multiple characters and need CPU fixup, but 90%+ of characters could be classified in parallel.
-
-### Use Case 3: Fuzzy Matching
-
-File search and symbol lookup with fuzzy matching:
+File search and symbol lookup with fuzzy matching. The candidates are CAC's `workspace/symbol` results and the host's file list; the WebView only ranks them. Ranking is presentation.
 
 ```wgsl
 // Parallel fuzzy match scoring
@@ -123,12 +98,16 @@ fn fuzzyScore(
 
 This could search 100,000 symbols in milliseconds.
 
-### Use Case 4: Terminal Rendering
+### Use Case 3: Terminal Rendering
 
 xterm.js already uses WebGL for text rendering. WebGPU could potentially further accelerate:
 - Glyph rasterization
 - Scroll buffer management
 - Selection highlighting
+
+### Not a Use Case: Tokenization
+
+An earlier draft proposed GPU-parallel tokenization of large files through a DFA transition table held in the WebView. That table would be a third grammar of Clef, beside the TextMate grammar and CCS's own lexer, maintained by hand and drifting on every construct it mis-classified. Highlighting stays as 02 and 07 set it: TextMate for first paint, CAC's `textDocument/semanticTokens` for truth. If an offline table is ever wanted it is generated from CCS's lexer definition, never authored in the WebView.
 
 ## Proposed WebGPU Architecture in Atelier
 
@@ -247,43 +226,43 @@ async function runLayoutIteration(
 }
 ```
 
-## Integration with F# Native
+## Integration with the Native Backend
 
 ### IPC for Compute Requests
 
-The F# Native backend could request GPU computation:
+The native backend could request GPU computation. The graph stays read-only: the coordinator holds the CCS-serialised projection, sends the kernel the node identities and edges, and keeps the positions that come back as viewer state keyed by node identity. Nothing is written into the graph; layout is not a fact the PSG carries.
 
 ```fsharp
-// F# Native side
+// Native side
 module GPUCompute =
-    let layoutPSG (psg: PSG) =
+    let layoutGraph (graph: PsgProjection) (layout: Map<NodeId, Position>) =
         async {
-            // Serialize PSG to buffer format
-            let nodes = psg.Nodes |> Array.map (fun n -> {| x = n.X; y = n.Y |})
-            let edges = psg.Edges |> Array.map (fun e -> {| source = e.Source; target = e.Target |})
+            // Project the graph to what the kernel needs
+            let nodeIds = graph.Nodes |> Array.map (fun n -> n.Id)
+            let edges = graph.Edges |> Array.map (fun e -> {| source = e.Source; target = e.Target |})
+            let seed = nodeIds |> Array.map (fun id -> Map.tryFind id layout)
 
             // Send to PSG WebView for GPU computation
-            let! result = WREN.request "gpu_layout" {| nodes = nodes; edges = edges |}
+            let! result = WREN.request "gpu_layout" {| nodeIds = nodeIds; edges = edges; seed = seed |}
 
-            // Update PSG with new positions
-            result.positions |> Array.iteri (fun i pos ->
-                psg.Nodes.[i].X <- pos.x
-                psg.Nodes.[i].Y <- pos.y
-            )
+            // New viewer state; the graph is untouched
+            return
+                Array.zip nodeIds result.positions
+                |> Array.fold (fun acc (id, pos) -> Map.add id pos acc) layout
         }
 ```
 
 ```typescript
 // WebView side
 WREN.onMessage('gpu_layout', async (data) => {
-    const { nodes, edges } = data
+    const { nodeIds, edges, seed } = data
 
     // Upload to GPU
-    uploadToBuffers(nodes, edges)
+    uploadToBuffers(nodeIds.length, edges, seed)
 
     // Run iterations
     for (let i = 0; i < 100; i++) {
-        await runLayoutIteration(device, pipeline, buffers, nodes.length)
+        await runLayoutIteration(device, pipeline, buffers, nodeIds.length)
     }
 
     // Read back results
@@ -292,6 +271,8 @@ WREN.onMessage('gpu_layout', async (data) => {
     return { positions }
 })
 ```
+
+`PsgProjection` is the CCS-owned export, not a record Atelier defines (see 06). Node identity across edits is not stable today; whether CCS should carry a stable identity is an open decision.
 
 ### Fallback to CPU
 
@@ -342,16 +323,17 @@ As a future enhancement, Atelier could bypass WebGPU entirely and use native GPU
 ```fsharp
 // Native Vulkan/Metal compute
 module NativeCompute =
+    // Extern declarations in Composer's form (app-local externs as WrenHello
+    // declares them, or a Fidelity binding project; CHandle<'T> at the
+    // boundary, no nativeint), not .NET's [<DllImport>]
     #if LINUX
-    [<DllImport("libvulkan.so")>]
-    extern ...
+    // libvulkan externs
     #elif MACOS
-    [<DllImport("Metal.framework/Metal")>]
-    extern ...
+    // Metal externs
     #endif
 
-    let layoutPSG (psg: PSG) =
-        // Direct GPU access, no WebView overhead
+    let layoutGraph (graph: PsgProjection) =
+        // Direct GPU access, no WebView overhead; positions remain viewer state
         ...
 ```
 
@@ -367,9 +349,8 @@ For an initial release, WebGPU would likely be sufficient. Native compute remain
 ### Phase 1: CPU-Only
 
 Start with CPU implementations:
-- D3 force layout for PSG
-- JavaScript tokenization
-- Standard fuzzy matching
+- D3 force layout for the PSG projection
+- Standard fuzzy matching over CAC's workspace symbols
 
 This works for small-to-medium projects.
 
@@ -377,7 +358,6 @@ This works for small-to-medium projects.
 
 Add WebGPU for:
 - PSG layout (most impactful)
-- Large file tokenization
 - Symbol search
 
 Maintain CPU fallbacks.
@@ -398,10 +378,9 @@ WebGPU could bring GPU compute to Atelier's WebViews:
 | Task | CPU Time | WebGPU Time | Speedup |
 |------|----------|-------------|---------|
 | PSG layout (5K nodes) | 400ms | 2ms | 200x |
-| Tokenize 100KB file | 50ms | 5ms | 10x |
 | Fuzzy match 100K symbols | 100ms | 10ms | 10x |
 
-The multi-WebView architecture would naturally support this approach. Compute-heavy operations could run in dedicated WebViews without blocking the editor.
+The multi-WebView architecture would naturally support this approach. Compute-heavy operations could run in dedicated WebViews without blocking the editor. Every kernel consumes a projection CCS or CAC serialises (node and edge lists, workspace symbols) and produces viewer state; none writes into the graph.
 
 WebGPU support varies by platform. Any implementation should provide CPU fallbacks. Native GPU APIs would only be considered if WebGPU proves insufficient.
 

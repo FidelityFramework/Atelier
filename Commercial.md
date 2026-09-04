@@ -14,7 +14,7 @@ The Community Edition is free and open source under the Apache License 2.0. It i
 
 - Full editor functionality with CodeMirror 6
 - Panel docking with Dockview
-- Basic LSP integration via FSNAC
+- Basic LSP integration via CAC
 - PSG visualization
 - Terminal integration
 - Multi-WebView architecture
@@ -31,9 +31,9 @@ The Professional Edition requires a Commercial License and includes everything i
 
 - **Advanced Debugging**: Full delimited continuation inspector with visualization
 - **Pipeline Inspector**: Complete compilation pipeline visibility (PSG, MLIR, LLVM IR, Assembly)
-- **Effect System Tooling**: Effect annotations, mismatch diagnostics, and effect graphs
-- **Performance Verification**: Integration with perf, VTune, and hardware performance counters
-- **Cache Analysis**: False sharing detection and cache line visualization
+- **Coeffect and Grade Surfacing**: Coeffect and grade annotations read from the PSG; any mismatch diagnostic is a CCS diagnostic (the spec reserves CCS8300-CCS8399) rendered through Lattice, never decided by the IDE
+- **Performance Verification**: Collection and display of perf, VTune, and hardware performance counter runs; the verdict against compile-time layout is the toolchain's, Atelier shows it
+- **Cache Line Visualization**: Cache line maps rendered from the PSG's layout facts with hardware samples overlaid; false sharing detection is a toolchain result, displayed
 - **Priority Support**: Direct access to the development team
 - **Commercial Use**: Rights for commercial products and services
 

@@ -7,7 +7,7 @@ Atelier's frontend is planned to be built on two remarkable SolidJS libraries:
 - **solid-codemirror**: CodeMirror 6 wrapper with reactive integration
 - **solid-dockview**: VS Code-style docking panel system
 
-Both integrate seamlessly with SolidJS's fine-grained reactivity model and would be exposed to F# via Partas.Solid bindings.
+Both integrate seamlessly with SolidJS's fine-grained reactivity model and would be exposed to the front end through Partas.Solid bindings. Today that front end is F# through Fable, a .NET SDK dependency, and interim; whether Composer's JSIR pathway takes on a Solid-style reactive surface so the front end can be Clef is an open decision (see 06).
 
 ## CodeMirror 6: The Editor Foundation
 
@@ -79,10 +79,10 @@ function Editor() {
 
 ### Proposed Partas.Solid Bindings for solid-codemirror
 
-The following illustrates how F# bindings might look:
+The following illustrates how the bindings might look. The sketch is in the interim Fable form: F# through Fable, a .NET SDK dependency. If Composer's JSIR pathway takes on the reactive surface (an open decision), the same module becomes Clef declarations carrying the JavaScript interop attributes Composer's JavaScript design names (`[<JsImport>]`, `[<JsEmit>]`, `[<JsErase>]`), consumed by Alex's JSIR witnesses; hand-written bindings could then give way to generated ones from the library-ingestion workflow in 10_transcribe.md (its name is under review against Composer's own use of the term).
 
 ```fsharp
-// Fable bindings for solid-codemirror
+// Interim Fable bindings for solid-codemirror (F# through Fable)
 module SolidCodeMirror
 
 open Fable.Core
@@ -113,7 +113,7 @@ module Editor =
             value = Some initialValue
             onValueChange = Some onChange
             extensions = Some [|
-                fsharpLanguage
+                clefLanguage        // TextMate stream language from clef-grammar; colouring only
                 oneDarkTheme
                 lineNumbers()
                 bracketMatching()
@@ -121,22 +121,25 @@ module Editor =
         }
         createCodeMirror options
 
-    let withLSP (result: CodeMirrorResult) (diagnostics: Accessor<Diagnostic[]>) =
-        // Create LSP extension with reactive diagnostics
-        let lspExt = createLspExtension diagnostics
+    let withLSP (result: CodeMirrorResult) (transport: LspTransport) =
+        // The one LSP client, tunnelled over WREN IPC to CAC (see below).
+        // Diagnostics, hover, completion and semantic tokens all arrive through it;
+        // the editor has no second feed for any of them.
+        let lspExt = createLspExtension transport
         result.createExtension lspExt
 ```
 
 ### CodeMirror 6 LSP Integration
 
-CodeMirror 6 could support LSP via `@codemirror/lsp-client` or similar integration:
+CodeMirror 6 could support LSP via `@codemirror/lsp-client` or similar integration. The client speaks to CAC (ClefAutoComplete, the Lattice language server), and CAC is the only producer of editor-facing facts: diagnostics, hover, completion, semantic tokens, folding ranges, document and workspace symbols, selection ranges. The native host carries the frames and the WebView renders; neither computes a semantic fact.
 
 ```typescript
 import { lspClient } from '@codemirror/lsp-client'
 
 const lsp = lspClient({
   transport: {
-    // Custom transport for BAREWire IPC
+    // Custom transport over WREN IPC (BAREWire frames as designed;
+    // WrenHello's interim bridge carries an ASCII encoding today)
     send(message) {
       WREN.send('lsp_request', message)
     },
@@ -144,7 +147,7 @@ const lsp = lspClient({
       WREN.onMessage('lsp_response', callback)
     }
   },
-  languageId: 'fsharp',
+  languageId: 'fsharp',   // what lattice-vscode registers today; 'clef' once the clients rename
   rootUri: 'file:///project'
 })
 
@@ -152,22 +155,24 @@ const lsp = lspClient({
 createCodeMirror({
   extensions: [
     lsp,
-    // Diagnostics rendered automatically
+    // Diagnostics rendered from publishDiagnostics
     // Completions integrated
     // Hover info shown
   ]
 })
 ```
 
-### F# Language Support via Lezer
+Honest baseline: every fact CAC serves today comes from FSharp.Compiler.Service typed-tree results, not from the PSG. The Lattice migration puts CAC on CCS; only then do the PSG-native facts Atelier's distinctive panels want (reachability, residence and layout offsets, escape class, proof obligations, nanopass provenance) have a source. Each is a CCS-owned contract item, not something Atelier derives.
 
-CodeMirror uses [Lezer](https://lezer.codemirror.net/) for incremental parsing. While F# doesn't have an official Lezer grammar, potential approaches include:
+### Clef Language Support in the Editor
 
-1. **Use TextMate grammar** via `@codemirror/legacy-modes` (like VSCode)
-2. **Create Lezer grammar** for F# (better integration)
-3. **Use generic highlighting** + LSP semantic tokens
+CodeMirror uses [Lezer](https://lezer.codemirror.net/) for incremental parsing. Clef has no Lezer grammar, and none is the destination. The order 07 lays out is the one Atelier follows:
 
-For Atelier, starting with TextMate (option 1) then migrating to Lezer (option 2) is pragmatic.
+1. **TextMate first**: the `clef-grammar` TextMate grammar lattice-vscode already ships, loaded through `@codemirror/legacy-modes`; first paint only.
+2. **CAC for truth**: `textDocument/semanticTokens` (full and range) for colouring; `foldingRange`, `documentSymbol` and `selectionRange` for folding, outline and expand-selection. All exist in CAC today (FCS-backed; PSG-backed after the Lattice migration).
+3. **Lezer only for offline tree access**, and only if generated from or conformance-tested against CCS's grammar.
+
+The hazard, named: a TextMate grammar and a Lezer grammar are each a second grammar of Clef beside CCS's lexer and parser, maintained by hand, and every construct they mis-tokenise is a visible divergence. That is tolerable only because they feed nothing but colouring, folding and bracket/comment configuration. Nothing in the editor derives a semantic fact from either.
 
 ## Dockview: Panel Management
 
@@ -213,7 +218,7 @@ function IDE() {
       event.api.addPanel({
         id: 'editor-1',
         component: 'editor',
-        params: { file: 'Program.fs' }
+        params: { file: 'Program.clef' }
       })
 
       event.api.addPanel({
@@ -244,7 +249,7 @@ function IDE() {
 ### Proposed Partas.Solid Bindings for solid-dockview
 
 ```fsharp
-// Fable bindings for solid-dockview
+// Interim Fable bindings for solid-dockview (F# through Fable, a .NET SDK dependency)
 module SolidDockview
 
 open Fable.Core
@@ -363,9 +368,8 @@ open SolidDockview
 
 let EditorPanel (props: {| file: string; api: IPanelApi |}) =
     let (content, setContent) = createSignal ""
-    let (diagnostics, setDiagnostics) = createSignal [||]
 
-    // Load file content
+    // Load file content (a host service; no semantic fact involved)
     onMount (fun () ->
         async {
             let! text = WREN.request "read_file" props.file
@@ -373,21 +377,16 @@ let EditorPanel (props: {| file: string; api: IPanelApi |}) =
         } |> Async.StartImmediate
     )
 
-    // Subscribe to LSP diagnostics
-    onMount (fun () ->
-        WREN.subscribe "diagnostics" (fun diags ->
-            if diags.uri = props.file then
-                setDiagnostics diags.diagnostics
-        )
-    )
-
     let { ref; editorView; createExtension } = Editor.create (content()) (fun newContent ->
         setContent newContent
+        // Host-side dirty tracking only; the LSP client sends its own didChange
         WREN.send "file_changed" {| file = props.file; content = newContent |}
     )
 
-    // Wire up LSP extension with reactive diagnostics
-    let _ = Editor.withLSP { ref = ref; editorView = editorView; createExtension = createExtension } diagnostics
+    // One LSP client, tunnelled to CAC (lspTransport is the WREN IPC tunnel
+    // defined with the LSP client above). Diagnostics for this buffer arrive
+    // as publishDiagnostics through it; there is no parallel channel.
+    let _ = Editor.withLSP { ref = ref; editorView = editorView; createExtension = createExtension } lspTransport
 
     div [ class' "editor-panel" ] [
         div [ ref ref; class' "editor-container" ] []
@@ -414,7 +413,7 @@ let IDE () =
 
     let { DockviewComponent } = Dockview.create components (fun api ->
         // Restore saved layout or use default
-        let savedLayout = localStorage.getItem "wrenedit-layout"
+        let savedLayout = localStorage.getItem "atelier-layout"
         if savedLayout <> null then
             Layout.restore api savedLayout
         else
@@ -425,7 +424,7 @@ let IDE () =
 
         // Save layout on change
         api.onDidLayoutChange (fun () ->
-            localStorage.setItem("wrenedit-layout", Layout.save api)
+            localStorage.setItem("atelier-layout", Layout.save api)
         )
     )
 
@@ -464,10 +463,10 @@ While DaisyUI doesn't provide docking panels (that's Dockview's job), it provide
 
 The combination of solid-codemirror and solid-dockview would provide:
 
-1. **Professional editor**: CodeMirror 6 with full LSP support
+1. **Professional editor**: CodeMirror 6 with CAC as its one source of semantic facts
 2. **Flexible layout**: VS Code-style docking with floating/popout windows
 3. **SolidJS integration**: Fine-grained reactivity, components run once
-4. **F# bindings**: Partas.Solid enables type-safe F# development
+4. **Typed bindings**: Partas.Solid through Fable today (interim; a .NET SDK dependency), Clef declarations through Composer's JSIR pathway if that decision lands
 
 This foundation aims to enable Atelier to rival VSCode's UX while maintaining the lean WREN Stack architecture.
 
