@@ -68,6 +68,36 @@ This is a placeholder. It does not specify:
 
 Each of these will be authored as the relevant work lands. This placeholder establishes the **directional intent**: Transcribe is the polyglot IDE-side coordination point for consuming per-language analysis substrates and producing binding declarations that join Clef projects as graph citizens.
 
+## Research reference: pattern families for source migration
+
+Wesley Attrot, Luciano Zago, Marcio Pereira, Vinícius Couto, Hervé Yviquel, and Guido Araujo. **[A Pattern Generation Language for MLIR Compiler Matching and Rewriting](https://doi.org/10.1145/3777905)**. *ACM Transactions on Architecture and Code Optimization* 23(1), Article 6, March 2026.
+
+The paper's Pattern Generation Language (PGL) and compiler (PGC) generate families of source patterns for the Source Matching and Rewriting (SMR) tool. Their relevant contribution is reducing the manual effort of enumerating variations of a computational idiom in C and Fortran.
+
+For the source-transposition/implementation-absorption work distinguished above, this technique could help authors recognize foreign idioms and route them to established Clef translation recipes. It could also generate migration regression cases. Language-specific analysis would supply the source semantics; translated Clef would enter Composer's normal elaboration and verification path. Pattern recognition itself supplies no proof of translation correctness.
+
+**Disposition:** retain as a research reference for migration-rule authoring and test generation. Adoption of the PGL/PGC/SMR toolchain is not planned; the paper does not presently justify a new dependency or a change to Alex's MiddleEnd.
+
+### Tree-sitter's supporting role
+
+[Tree-sitter](https://tree-sitter.github.io/tree-sitter/) provides incremental concrete-syntax trees and [structural queries](https://tree-sitter.github.io/tree-sitter/using-parsers/queries/1-syntax.html). For source migration, it could support navigation, source-range selection and identification of candidate idioms while a developer edits foreign code, including incomplete code. Such queries could help present a shortlist of regions for transposition.
+
+Tree-sitter's syntax information does not establish resolved types, ownership, effects or behavioral equivalence. Language-specific semantic analysis would still determine whether a candidate fits a translation recipe, and Composer would check the resulting Clef through its normal pipeline. Its prospective value is in the interactive source-selection surface; adoption would depend on whether it adds useful coverage beyond the parsers and compiler APIs already available to Atelier.
+
+### Concrete example: reading a pointer's lifetime contract
+
+Farscape's `docs/10_Boundary_Marshaling_Spec.md`, particularly **Representation** and **The Composer-Side Contract**, supplies a small example worth carrying into Transpose/Transcribe research. A callback pointer, its `userdata` and its destroy hook together describe a lifecycle. Recognizing that relationship could recover an existing binding contract for a migration recipe: the callback's ABI shape, the environment it accesses, who owns that environment and which event releases it.
+
+The documented callback tiers give three distinct readings:
+
+- **With `userdata` and a destroy hook:** marshal a Clef closure with an environment whose lifetime spans registration; wire the hook to its release thunk.
+- **With `userdata` but no destroy hook:** associate the environment with a registration handle whose consumption releases it.
+- **Without `userdata`:** require a closed function with no captured environment.
+
+This is a candidate for reading semantic relationships across declarations and uses, beyond matching isolated syntax. Tree-sitter could locate the relevant source regions; language-specific analysis and the library's lifecycle contract would establish the relationship. A function named `destroy` alone does not establish ownership transfer, release timing or whether callbacks have finished. Missing evidence should remain an unresolved contract requirement.
+
+For binding ingestion, that reading selects the appropriate marshaling contract. For implementation absorption, it informs the corresponding Clef lifetime structure, retaining the boundary contract wherever foreign calls remain. Composer's existing joint constraint over Clef type, C ABI and lifetime owner is the intended destination. This records a focused integration example from Farscape's design, not a claim that automatic lifecycle recovery or all callback-tier enforcement is implemented.
+
 ## Cross-references
 
 - [TypeScript Binding via Xantham](https://github.com/speakeztech/clef-lang-site/blob/main/hugo/content/docs/design/interop/typescript-binding-via-xantham.md) — the TypeScript analysis substrate and its persistent role

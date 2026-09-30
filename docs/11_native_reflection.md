@@ -4,7 +4,7 @@
 
 ## What This Document Is
 
-"Native reflection" in Fidelity is not a new subsystem. It is a naming exercise over machinery that exists for other reasons: the Program Semantic Graph (PSG) as persistent compiler state, quotations as typed semantic carriers, witnesses as structured injection, active patterns as classification, the Huet-style zipper as the traversal cursor, and a resident compiler process (proposed below; a roadmap line in Composer, not a fact) as the place where all of it would stay alive between keystrokes. CCS owns the graph inside whatever process hosts it.
+"Native reflection" in Fidelity proposes an observation surface over existing compiler machinery: the Program Semantic Graph (PSG), quotations as typed semantic carriers, active patterns as classification, and the Huet-style zipper as the traversal cursor. A resident compiler service would retain versioned graph snapshots between keystrokes. Composer's [interactive compiler workbench plan](../../Composer/docs/Interactive_Compiler_Workbench.md) owns that service and the native execution bridge; both remain planned. CCS owns the graph inside whatever process hosts it. A reflection API and metaprogram execution require their own contracts.
 
 One framing matters enough to fix before anything else: **reflection here is not a query engine.** "Query" stands to reflection as "emit" stands to lowering — an imperative verb imported from someone else's architecture, dragging that architecture's execution model behind it. Composer does not emit; it witnesses, and the code is the residual. Nothing here queries; consumers observe, and everything is pull: coeffects are placed, codata is observed. C++26 ships reflection as a flat list of functions to call; Fidelity's reflection is the observation surface of the same traversal that compiles the program, made available to consumers other than the code generator.
 
@@ -43,15 +43,15 @@ Every mainstream ecosystem gives programs and tools **different doors** into sem
 | C# / .NET | `System.Reflection` (runtime tables) | Roslyn (compiler API) | No — two metadata models |
 | F# / .NET | Quotations + runtime reflection | FSharp.Compiler.Service symbols | No — split by phase |
 | C++26 | `std::meta` (inside the TU being compiled) | libclang / Clang AST | No — the standard API is unavailable to tools |
-| **Fidelity** | **PSG observation surface** | **PSG observation surface** | **Yes — one door, one live graph** |
+| **Fidelity (proposed shared service)** | **PSG observation surface** | **PSG observation surface** | **Intended: versioned observations of the same compiler-owned graph** |
 
 The C++26 irony is sharpest: programs finally get the compiler-state API, but clangd and clang-tidy still enter through a different one. FCS had the inverse problem for a decade: tooling got a superb compiler-state API (`FSharpEntity`, `FSharpSymbol` — recognizably structure and identity observations avant la lettre), but programs could not observe themselves.
 
-Fidelity closes the loop structurally, because of a fact no batch compiler can replicate: **the compiler does not exit.**
+The proposed shared service would let these consumers observe the same compiler-owned snapshots. Keeping a process alive supplies the hosting opportunity; snapshot identity, invalidation and legal observations still need explicit contracts.
 
 ## One Mechanism, Four Residuals
 
-What makes "compile time" a session rather than a phase is a compiler that does not exit. The process topology this document proposes for that is Atelier's, not a fact of the toolchain: one resident process; a Prospero supervisor; a PSG actor, an LSP actor, a proof actor; BAREWire shared memory between them; an eval worker spawned lazily. None of it is documented in Composer, clef, or the spec beyond a roadmap line ("daemon mode: LSP, incremental recomputation over the full PSG"), and a self-hosted Composer is a bootstrap milestone, not a fact. What is fixed regardless of topology: CCS owns the graph inside whatever process hosts it, enriched at saturation with everything the compiler knows (types, SRTP resolution, arena affinity, residence, obligations, layout; escape class interim in Composer, scheduled to CCS), and Composer receives it.
+Composer's workbench plan starts with a possible SageFS/.NET bootstrap host and a shared versioned compiler/proof service, then adds LLVM ORC execution. It does not select the topology previously sketched here: a Prospero supervisor, separate PSG/LSP/proof actors, BAREWire shared memory and a lazy evaluation worker. Those remain proposals for a later host, not prerequisites to the bootstrap workbench. Full native self-hosting is also separate. CCS/Baker own graph construction, elaboration, saturation and semantic facts. Alex observes those facts through ctx pull and witnesses the admitted MLIR; no host or reflection consumer may supply missing semantics.
 
 Reflection is then not an API bolted onto that state. It is the compilation mechanism itself, serving consumers beyond the code generator. The Huet-style zipper is the attention mechanism: something directs its focus; the joint constraints already resolved into the graph meet at that focus; a witness observes them; and the residual is elided. What differs per consumer is only *what directs attention* and *what the residual is*:
 
@@ -59,7 +59,7 @@ Reflection is then not an API bolted onto that state. It is the compilation mech
 |:---------|:-----------------------|:------------------------|
 | Alex traversal | the compilation walk itself | MLIR |
 | Metaprogram actor (proposal) | the metaprogram's own navigation | compile-time values; synthesized PSG structure |
-| Lattice LSP actor | the developer's cursor and edits | hovers, diagnostics, code lenses |
+| Lattice service | the developer's cursor and edits | hovers, diagnostics, code lenses |
 | Atelier panes | the viewport | rendered views: PSG pane, layout maps, escape diagnostics |
 
 ```mermaid
@@ -72,16 +72,16 @@ flowchart TB
 
     zipper --> alex["Alex walk<br/>residual: MLIR"]
     zipper --> meta["Metaprogram actors (proposal)<br/>residual: values,<br/>synthesized structure"]
-    zipper --> lsp["Lattice LSP actor<br/>residual: hovers,<br/>diagnostics"]
+    zipper --> lsp["Lattice service<br/>residual: hovers,<br/>diagnostics"]
     zipper --> atelier["Atelier panes<br/>residual: rendered views"]
 ```
 
 Design-time tooling is another elision target. A hover card is the residual of the same observation that, on the compilation walk, would have become an MLIR op. Nothing is computed on demand for the editor's benefit; the codata principle holds across all four columns: the enrichments were placed at saturation (mise-en-place), and every consumer *observes*.
 
-Two properties fall out of this framing rather than needing design:
+Two requirements connect this proposal to the workbench:
 
-- **Attention is the freshness schedule.** What is focused is what must be kept current. The editor's cursor and Atelier's viewports tell the incremental machinery exactly which region of the graph deserves recomputation priority after an edit: the same signal, no separate invalidation protocol. The Semantic Projections (defined below) are that machinery.
-- **Execution would be native.** Where C++ evaluates reflection inside the constant evaluator (an interpreter bolted into the compiler, and a notoriously slow one), a Clef metaprogram would execute through the JIT path `clefx` specifies, the same pipeline that produces ahead-of-time binaries. This is a proposal contingent on `clefx`: the spec's interactive chapter is forward-looking, no JIT exists in the corpus, and the inherited REPL project was removed. The spec's standing rule holds meanwhile: quotation metaprogramming requires no runtime evaluation, and anything a metaprogram synthesizes into the graph goes through the Baker recipe channel (the rule Synthesis and Reification Discipline states below). The zero-overhead guarantee is identical either way: nothing survives to the artifact unless reified.
+- **Attention can prioritize work; it cannot establish freshness.** Cursor and viewport focus can guide scheduling. Compiler-owned dependencies, source/target/compiler generations and proof-query identity determine whether observations remain valid. A warm graph or focused node does not establish incremental recomputation. The [proof responsiveness contract](../../Composer/docs/Interactive_Compiler_Workbench.md#proof-responsiveness) applies equally to Atelier, Lattice and agent consumers.
+- **Clef execution would be native.** The selected interactive name is `clefx`, matching `.clefx` script files. Composer plans the CCS/Baker → PSG → Alex → admitted MLIR → LLVM/ORC path, including while the compiler itself remains .NET-hosted. FSI may host that compiler implementation; it cannot evaluate Clef in place of the native path. This does not settle whether user metaprograms execute during elaboration. Quotation metaprogramming requires no runtime evaluation; any synthesized graph structure must enter through Baker's recipe channel.
 
 ## The Triad Is Already Two-Thirds Owned
 
@@ -127,13 +127,13 @@ Two terms carry this design, and they name different things.
 
 The **vocabulary** is the contract: the enumerable, versioned set of observation signatures a focus supports. Its edition travels with CCS — one can point at a CCS version and say precisely which observations exist and no others.
 
-The **Semantic Projections** are the mechanism that would back the contract: the edit-driven re-settlement schedule of the graph's one saturation lattice (`Fresh < Elaborated < Saturated`; a hyperedge rule fires only when all its sources are Saturated), kept at design-time cadence so that observation remains a pull of already-placed structure. They are CCS-owned because the lattice is CCS's; the plan that introduces the lattice (`PSG_to_PHG_Plan.md`, Phase 1) records that nothing of it is built yet. "Projection" carries its event-sourcing sense deliberately: as a materialized view stands to an event store, a Semantic Projection stands to the edit stream — a fast, read-only model, rapidly updated as the underlying graph changes, and rebuildable from it at any time. Projections hold no authority; the PSG remains the single source of truth, and every projection is disposable cache. The same word is also the codata word, and the two senses agree: in the copatterns tradition, codata is *defined by its projections* — observation is the application of a projection that has already settled. In both traditions the verb belongs to the maintainer, not the observer: the compiler projects when edits arrive; consumers only observe.
+The **Semantic Projections** are proposed compiler-owned views of versioned graph facts. Their incremental maintenance must follow the current [PSG/PHG plan](../../clef/docs/fidelity/phg/PSG_to_PHG_Plan.md) and [incremental provenance contract](../../Composer/docs/Nanopass_Incremental_Contract_Direction.md). This document does not establish a completed incremental driver, one universal settlement lattice or a latency guarantee. A consumer observes the compiler's facts; retaining a derived view does not give that consumer semantic authority or its own invalidation policy.
 
-The plural is about dirty regions, not about separate settlement algebras. There is one lattice and one monotone driver; what differs per annotation is which edge classes an edit dirties: a def-use edge for a width, a capture or call edge for an escape class, a type-flow edge for a dimensional constraint, a per-target context for a platform-conditioned layout. A projection is the slice of the lattice one consumer reads, indexed by the edge classes that can dirty it, so an edit that dirties only widths does not invalidate an escape answer that never depended on it. The observation groups in the tables below are, in implementation terms, those slices. Widths and escape class are today Composer's interim `IntervalAnalysis` and `EscapeAnalysis`, scheduled to move into CCS; until they move, the projection over them is a projection of the graph as it will be, not as it is.
+CCS already owns range facts and escape codata. Reusing a projection after an edit additionally requires an explicit dependency contract: source/type relationships, captures, selected target, compiler generation and proof premises can all affect validity. A width-only change may preserve another answer only when the compiler establishes that answer's independence. The observation groups below describe desired views; they are not implemented incremental partitions.
 
-The Semantic Projections are design-time mise-en-place, and the codata principle forces the layer's existence: on the batch walk, nanopasses enrich the graph before witnesses move, so witnesses only observe — but at design time edits stream in continuously, and if answers were computed when the editor looked, the witness would be computing. Something must play the nanopass role continuously between keystrokes. The invariant that keeps every consumer honest: **computation is edit-driven; observation is free.**
+On both the batch walk and the proposed interactive path, owning compiler passes establish the facts before a consumer relies on them. A request may schedule compiler work without moving that work's semantic authority into the consumer. Observation, transport and formatting still have costs to measure. Baker's settlement and Alex's passive witnessing remain the integrity boundary regardless of scheduling policy.
 
-Because each projection is over the graph's topology, invalidation is structural, not textual: an edit dirties a region per edge class (Structural, Reference, Provenance, Obligation), and the monotone driver re-settles the affected slice only. Attention supplies the schedule: the zipper's focus, the editor's cursor, an Atelier viewport all weight which dirty regions settle first — eager where attended, deferred elsewhere. This is the Incremental keystone of the concurrency model meeting the PSG. The honest standing art for this shape is self-adjusting computation (Acar) — *placed-then-observed*. Rust-analyzer's Salsa, by way of Adapton (the demand-driven branch of Acar's line), solves the same design-time problem from the other side — demand-driven memoization, where observation triggers computation — which is precisely the architectural line this design does not cross.
+Structural dependency information can eventually reduce the work invalidated by an edit. Until that reuse is established, conservative invalidation remains valid. Attention can prioritize pending checks and solver jobs, while source/target/compiler identity and exact proof-query correspondence determine freshness. Self-adjusting computation and demand-driven memoization are research precedents; neither is selected by this reflection proposal.
 
 Seed the vocabulary from P2996's battle-tested taxonomy rather than inventing one — every question their function list answers is an observation this surface must support — then extend it with what only this compiler's enrichments contain.
 
@@ -151,7 +151,7 @@ Seed the vocabulary from P2996's battle-tested taxonomy rather than inventing on
 | Group | Representative observations | Why C++ cannot have it |
 |:------|:----------------------------|:-----------------------|
 | Coeffects | `ArenaAffinity`, `Resides` and `Constrains` edges, obligation anchors at the focus | No coeffect system |
-| Memory | escape classification (Composer interim, scheduled to CCS), arena affinity, residence in a declared space | No escape analysis surface |
+| Memory | compiler-owned escape classification (`Graph.Codata.Escapes`), arena affinity, residence in a declared space | No escape analysis surface |
 | Resolution | SRTP witness selection, active dispatch targets | SRTP does not exist |
 | Dimensional | units-of-measure carried by a type, dimensional constraints | No dimensional types |
 | Platform | **platform-conditioned layout** — offsets under NTU deferral, indexed by platform context | C++ layout queries only answer post-concretization |
@@ -169,7 +169,7 @@ The Clef analog of generative reflection is derive-style synthesis through the e
 - **`%A` formatting, equality, comparison** — the classic `System.Reflection` consumers in .NET, regenerated as compile-time SRTP/witness synthesis (the obj-elimination table's "compile-time SRTP" column, given its general mechanism)
 - **Platform descriptor expansion** — quotation-carried constraints elaborated against observed structure
 
-All of it flows through the nanopass/witness channel as PSG-node synthesis. No string generation, no token streams, ever — the same discipline that keeps elision structurally guaranteed keeps generative reflection structurally guaranteed.
+These are intended applications of structured synthesis. Baker must elaborate and saturate any synthesized PSG structure before Alex observes it. Alex's witnesses do not synthesize source semantics, and this proposal does not establish an implemented general derive API.
 
 **Reification** follows the same rule as C++: nothing survives to runtime unless explicitly frozen. Where P3491 adds `define_static_string`/`define_static_object` to give reflection results a runtime address, Composer already places program-lifetime values in static storage via `memref.global`. An observation whose result the program keeps becomes a static constant elided by a witness; an observation consumed entirely at compile time leaves no residue. "What you don't use, you don't pay for" holds by construction.
 
@@ -182,7 +182,7 @@ P3394 lets C++ attach user-defined compile-time metadata to declarations and que
 The four consumers share the vocabulary; they differ in transport and in how attention is directed:
 
 1. **Metaprogram actors** (proposal, contingent on `clefx`): full vocabulary, in-process BAREWire, compile-time only. This would be Clef's `consteval`: a metaprogram is an actor that navigates its own focus through the graph and observes, with its lifetime bounded by elaboration; anything it synthesizes enters the graph only through the Baker recipe channel.
-2. **Lattice LSP actor**: the design-time subset serialized over LSP as `clef/*` extension methods. 08 sketches one today (`clef/runVerification`); the reflection methods (`clef/memoryLayout`, `clef/srtpResolution`, `clef/platformBindings`, and successors) are proposed here and exist nowhere yet, not in 08, not in ClefAutoComplete, not in lattice-vscode. Each would be a focus-and-observe pair: the request carries a position or a NodeId, the response is that node's `LayoutHint`, `SRTPResolution`, or `PlatformBinding` facts as the graph holds them. Editors get reflection without knowing it; see [08 - Tooling Integration](./08_tooling_integration.md).
+2. **Lattice service**: the design-time subset serialized over LSP as `clef/*` extension methods. The general reflection methods (`clef/memoryLayout`, `clef/srtpResolution`, `clef/platformBindings`, and successors) remain proposals. Each would be a versioned focus-and-observe pair: the request identifies a source position or node in a checked snapshot, and the response presents compiler-owned facts. The earlier `clef/runVerification` sketch in [08 - Tooling Integration](./08_tooling_integration.md) is not the current proof protocol; [Composer's Lattice integration](../../Composer/docs/Lattice_Integration.md) owns the implemented surface and its acceptance gates.
 3. **Atelier panes**: direct BAREWire views over shared memory, no LSP serialization. The PSG visualizer is, in this framing, simply *observation made visible*: the D3 pane renders the same focus a metaprogram would stand at. Hover cards, cache-line maps, escape diagnostics, and cross-target comparisons are all residuals of observation. With a remote host, the same views would arrive over BAREWire-over-WebSocket unchanged. This needs a BAREWire-described graph export from CCS; today the only export is the JSON phase artifacts, so the export is a CCS contract item (`Lattice_Consumer_Contract.md` §3).
 4. **Alex itself** — the first and load-bearing consumer. Nothing in this document adds machinery to the compilation walk; the point is that the walk's machinery already is the reflection system.
 
@@ -193,8 +193,8 @@ Transcribe ([10 - Transcribe](./10_transcribe.md)) composes naturally: ingested 
 | C++26 constraint | Fidelity position |
 |:-----------------|:------------------|
 | Reflection as a query API (a list of functions to call) | Reflection as observation at a focus on a live walk |
-| Translation-unit scope | The PSG is whole-program and persistent across edits |
-| Constant-evaluator interpretation | Metaprogram actors would execute natively through the `clefx` JIT path (proposal; contingent on `clefx`, which is spec-only today) |
+| Translation-unit scope | The compiler owns the program graph; persistence and sound reuse across edits belong to the planned shared service |
+| Constant-evaluator interpretation | Native metaprogram execution is a separate proposal, contingent on the planned `clefx` path and an elaboration-phase execution contract |
 | Monotyped `info` with a flat function list | Opaque handle + active-pattern classification: typed views, open ontology |
 | Vocabulary frozen by the standard | Vocabulary versioned with CCS; there is exactly one compiler, so compiler-specific semantics are exposable |
 | Programs-only access (tools use libclang) | One observation surface for metaprograms, LSP, Atelier, and Alex itself |
@@ -203,7 +203,7 @@ Transcribe ([10 - Transcribe](./10_transcribe.md)) composes naturally: ingested 
 
 The wrong answer is "Clef doesn't need reflection" — it concedes that reflection is a runtime facility one either needs or forgoes, and invites the follow-up "so how do you serialize?"
 
-The right answer: **"Clef already has it — it never threw the information away."** Runtime reflection is a partial, costly reconstruction of knowledge the compiler discarded. Fidelity's compiler keeps that knowledge alive in the PSG, typed and observable, at compile time where it is complete and free. Every practical use of `System.Reflection` — serializers, formatters, comparers, dependency wiring, schema generation — is served by observation at a focus and witness synthesis, with the results frozen into the binary and nothing reconstructed at runtime. C++26 just adopted the same position for the same reasons; Fidelity's version is whole-program, session-persistent, and shared with the tooling.
+The grounded answer is that CCS retains semantic information in the PSG, and this design proposes exposing it through compiler-owned observations and structured Baker synthesis. Serializers, formatters, comparers, dependency wiring and schema generation are intended applications. Their general APIs, complete semantic coverage and session persistence are not established by this document or by a future JIT alone. Required facts must be settled before use; unresolved observations must remain explicit.
 
 ## Open Questions
 
@@ -211,12 +211,13 @@ The right answer: **"Clef already has it — it never threw the information away
 - **Phase discipline.** Which observations are legal at which elaboration phases — a layout observation against a not-yet-saturated graph must fail honestly (`TRError`-style), not answer approximately.
 - **LSP subset.** Which observation groups serialize over `clef/*` versus remain daemon-local; where the line sits between Lattice-served editors and Atelier's direct views.
 - **Vocabulary versioning.** The vocabulary is a public contract of CCS; how its editions are versioned against the language and against saved PSG snapshots.
-- **Projection slices and eagerness.** Which edge classes dirty which annotations is a declared table, not a second settlement algebra; the table (widths read types; escape reads types) needs writing down in CCS once widths and escape class move there; and how attention weights eager settlement versus deferral remains the policy knob between wasted work and observable staleness.
+- **Projection slices and eagerness.** CCS already owns ranges and escape codata; sound dependency-directed reuse across edits remains work. The compiler must establish which changed inputs invalidate each fact and its proof evidence before attention-based scheduling can reuse it. See the [incremental contract direction](../../Composer/docs/Nanopass_Incremental_Contract_Direction.md).
 - **Metaprogram authority.** A metaprogram's focus can wander the whole program's graph; whether library-published metaprograms need a capability gate on where they may stand is unresolved.
-- **Metaprogram execution.** Whether user metaprograms execute at compile time at all, and through what. The `clefx` JIT path is forward-looking in the spec and no JIT exists in the corpus; the spec's standing rule is that quotation metaprogramming requires no runtime evaluation. Until settled, metaprogram actors are a proposal and synthesis stays on the Baker recipe channel.
+- **Metaprogram execution.** Whether user metaprograms execute during elaboration, and under what authority and lifetime rules. Composer owns the planned `clefx` native bridge, but its delivery does not answer this question. Quotation metaprogramming requires no runtime evaluation; metaprogram actors remain a proposal and synthesis stays on the Baker recipe channel.
 
 ## Related Documents
 
+- [Interactive compiler workbench](../../Composer/docs/Interactive_Compiler_Workbench.md): hosting, compiler integrity, native execution and proof responsiveness; all milestones remain planned
 - [08 - Tooling Integration](./08_tooling_integration.md): the `clef/runVerification` sketch this surface generalizes
 - [10 - Transcribe](./10_transcribe.md) — ingested bindings as observable citizens of the graph
 - [CCS Architecture](https://github.com/FidelityFramework/Composer/blob/main/docs/CCS_Architecture.md) — "PSG as Design-Time Resource," the contract this document builds on
