@@ -1,6 +1,6 @@
 # 05 - WREN Graphics and Interactive Visualization
 
-WREN is a foundation for responsive applications across desktop, browser and mobile hosts. Ranvier Native can run application code natively and reach WebCore's DOM through native interop. A separate browser frontend can communicate with a native Clef backplane through BAREWire and use a WebView or regular browser for presentation. Each deployment needs its own host, packaging and platform contracts.
+WREN is a foundation for responsive applications across desktop, browser and mobile hosts. Ranvier views can be shared across targets: the native backend reaches WebCore's DOM through native interop, and the browser backend runs the view in JavaScript in a WebView or regular browser. A deployment can communicate with a native Clef backplane through BAREWire. Each target needs its own host, packaging and platform contracts.
 
 Atelier is a demanding in-house example: an editor that can make a live Program Semantic Graph and its proof evidence inspectable. A financial application, scientific dashboard or engineering tool can use the same binding, reactive, graphics and communication foundations with its own domain model. These documents live in Atelier because it brings the pieces together, while the intended capability serves WREN and Fidelity applications more broadly.
 

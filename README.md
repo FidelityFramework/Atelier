@@ -6,7 +6,7 @@
 
 > **Note:** This project is currently in the preliminary design phase. The documentation describes the intended architecture and features. Implementation has not yet begun.
 
-**Frontend direction:** Explore Ranvier's native WebCore backend for WREN applications: the application runs natively and its reactive views reach the DOM through native interop, without compiling the application to JavaScript. Fickl and Ranvier remain a browser-targeted path where a JavaScript deployment is wanted. Partas.Solid and Fable describe the earlier WrenHello baseline. Clef-to-JavaScript through JSIR is a later target with its own conformance work. See the [reactive frontend](docs/06_reactive_frontend.md) and [visualization strategy](docs/05_webgpu.md).
+**Frontend direction:** Share Ranvier views across native WebCore and browser targets. The native application reaches the DOM through native interop without compiling the application to JavaScript. The browser target compiles the shared F# views with Fickl. Partas.Solid and Fable describe the earlier WrenHello baseline. Clef-to-JavaScript through JSIR is a later target with its own conformance work. See the [reactive frontend](docs/06_reactive_frontend.md) and [visualization strategy](docs/05_webgpu.md).
 
 **The Fidelity Framework IDE - Self-Hosting via WRENStack**
 
@@ -124,7 +124,7 @@ The goal is a responsive application with low startup and resource costs. The [v
 - **D3.js**: PSG graph visualization
 - **xterm.js**: Terminal emulation with WebGL renderer
 
-CodeMirror, Dockview, D3.js and xterm.js are JavaScript components for the browser/WebView path. The native WebCore path needs its own editor, docking, graph-layout and terminal integrations; their availability cannot be inferred from these browser libraries.
+Ranvier's supported view code can be shared between native and browser targets. CodeMirror, Dockview, D3.js and xterm.js are JavaScript components for the browser/WebView path. Features that depend on them need a native integration or a shared implementation for the native target; their availability cannot be inferred from the browser libraries alone.
 
 ### Backend (Native)
 - **Composer-compiled host**: WrenHello demonstrates a host without a .NET runtime. The current Ranvier Native F# application uses .NET NativeAOT and a packaged WebCore backend.
