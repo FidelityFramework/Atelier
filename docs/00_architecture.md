@@ -184,9 +184,9 @@ Atelier's projected memory footprint:
 | Native binary | ~5MB |
 | WebKitGTK shared libs | Already loaded by system |
 | WebView process | ~30-50MB |
-| SolidJS app | ~2MB |
+| Frontend application | To measure with Fickl and Ranvier |
 | CodeMirror | ~3MB |
-| **Total (host)** | **~40-60MB** |
+| **Total (host)** | **To measure for the selected host and frontend** |
 | CAC and CCS (.NET, separate processes) | Not in the host total; present until CCS is Clef-compilable |
 
 Compare to:
@@ -196,7 +196,7 @@ Compare to:
 
 ## Thread Model
 
-The multi-WebView architecture aims to enable true thread isolation:
+The multi-WebView architecture separates editing, debugging and build presentation into logical surfaces. The host and WebView engine determine their actual process and thread placement:
 
 ```mermaid
 flowchart TB
@@ -215,7 +215,7 @@ flowchart TB
     build --> buildwv
 ```
 
-Each WebView runs in its own process (WebKit/Chromium architecture). This means heavy operations (debugging, build monitoring) should not freeze the editor UI.
+Schedule expensive work away from the editor's input path where the host supports it, and measure editor latency while the other surfaces are active. Separate WebViews alone do not establish process isolation or independent scheduling. The [multi-WebView design](04_multi_webview.md) describes the coordination and responsiveness tests.
 
 ## Fidelity Architecture Integration
 
@@ -230,7 +230,7 @@ Nothing downstream of CCS computes a semantic fact; the IDE reads. The Photograp
 
 ### PSG as the Foundation
 
-The Program Semantic Graph (PSG) is the single source of truth for Atelier's tooling. The graph's own vocabulary, as CCS carries it today:
+The Program Semantic Graph (PSG) is the single source of truth for Atelier's tooling. CCS publishes an internal `Fidelity.PSG` revision for downstream compiler consumers. Atelier's host-facing access is a separate delivery boundary: the current artifact reader consumes the emitted phase files, while a scoped, serialized graph projection requires its own CCS-owned contract. The graph's own vocabulary, as CCS carries it today:
 
 | Feature | PSG facts read |
 |---------|----------------|
@@ -240,7 +240,7 @@ The Program Semantic Graph (PSG) is the single source of truth for Atelier's too
 | Obligations | Obligation nodes (`ObligationInfo`; `EdgeClass.Obligation`, role `Constrains`), the ledger `06a_obligations.json`, the SMT text `06b_obligations.smt2`, the cvc5 verdict per anchor, and Composer's build-time twin paired by anchor name |
 | Diagnostics | `NodeId` and source range; CCS diagnostic codes, rendered through Lattice |
 
-Hyperedges materialise only what enrichment mints (obligations, residence); structural and reference edges are projected from the one table on demand. A viewer renders that table, it does not rebuild it.
+Hyperedges materialize only what enrichment mints (obligations, residence); structural and reference edges are projected from the one table on demand. A viewer renders that table, it does not rebuild it.
 
 What does not exist today: a host-facing API or LSP method that exposes the graph, and a serialization contract for a non-.NET consumer. Both are CCS-owned contract items. Whether CCS should also own a stable node identity and a semantic delta across edits is an open decision; Atelier does not compute either in the meantime.
 

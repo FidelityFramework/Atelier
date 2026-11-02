@@ -90,7 +90,7 @@ Atelier takes a different path: purpose-built tooling for the Fidelity ecosystem
 | Startup time | 2-5 seconds | <100ms | <200ms target |
 | PSG visualization | Plugin (limited) | Not practical | Planned D3 integration |
 | Delimited continuation debugging | Not supported | Not supported | Planned first-class support |
-| Multi-WebView architecture | Single process | N/A | Planned isolated WebViews |
+| Multi-WebView architecture | Varies by application | N/A | Planned coordinated WebViews; isolation depends on host |
 | WebGPU compute | Limited | N/A | Planned direct access |
 
 ### Guiding Design Principles
@@ -117,8 +117,8 @@ The goal is a responsive application with low startup and resource costs. The [v
 ### Frontend (WebView)
 - **Fickl and Ranvier**: Selected F#-to-JavaScript compiler and reactive model; their integration in Atelier remains to be validated
 - **WrenHello baseline**: Its earlier Partas.Solid/Fable frontend provides a host and bridge reference for the transition to Fickl and Ranvier
-- **CodeMirror 6**: Modern editor; the LSP client for CAC. A Lezer grammar for Clef is colouring-only: every structural or semantic fact (folding by meaning, structure-aware navigation, diagnostics) comes from CCS through LSP and the PSG, never from the Lezer tree. That grammar would be a third grammar of Clef beside CCS's parser (the authority) and the TextMate grammar in clef-grammar that Lattice consumes; deriving it from clef-grammar bounds the maintenance cost
-- **solid-dockview**: VS Code-style panel docking with floating windows
+- **CodeMirror 6**: Modern editor; the LSP client for CAC. A Lezer grammar for Clef is coloring-only: every structural or semantic fact (folding by meaning, structure-aware navigation, diagnostics) comes from CCS through LSP and the PSG, never from the Lezer tree. That grammar would be a third grammar of Clef beside CCS's parser (the authority) and the TextMate grammar in clef-grammar that Lattice consumes; deriving it from clef-grammar bounds the maintenance cost
+- **Dockview**: Candidate for panel docking and floating windows, with an adapter for the selected reactive frontend
 - **D3.js**: PSG graph visualization
 - **xterm.js**: Terminal emulation with WebGL renderer
 
@@ -175,7 +175,7 @@ See the [docs/](./docs/) folder for detailed documentation:
 
 - [00_architecture.md](./docs/00_architecture.md): WREN architecture deep dive
 - [01_webview_abstraction.md](./docs/01_webview_abstraction.md): Platform WebView lessons from WRY
-- [02_solid_components.md](./docs/02_solid_components.md): Partas.Solid bindings for CodeMirror and Dockview
+- [02_solid_components.md](./docs/02_solid_components.md): Earlier Solid component design and editor integration reference
 - [03_unique_features.md](./docs/03_unique_features.md): Delimited continuations, PSG visualization
 - [04_multi_webview.md](./docs/04_multi_webview.md): Multi-WebView architecture
 - [05_webgpu.md](./docs/05_webgpu.md): WREN graphics and interactive visualization

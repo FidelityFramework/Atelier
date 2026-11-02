@@ -66,6 +66,18 @@ A theme change can likewise be broadcast as a versioned state update, with each 
 
 The coordinator should retain an explicit registry of open surfaces, their subscriptions and the current source or session each is authorized to observe. A request carries a correlation identity so its response returns to the intended view. A subscription has its own lifetime: closing a visualization retires that subscription without automatically stopping a compiler session or background observer that another owner still needs. Reopening obtains an admitted snapshot and then resumes from its declared revision. An event such as “open this file” is delivered as an occurrence; the currently selected file and current theme are state that can be reconstructed.
 
+For an initial implementation, use the following division of responsibility. An application can choose a different policy explicitly when its collaboration model requires it.
+
+| State or event | Responsible owner | Cross-surface behavior |
+|---|---|---|
+| Admitted graph revision and scope | Coordinator or graph service | Send an authorized snapshot when a view opens, followed by ordered updates for its subscription. |
+| Camera, filters and local layout | Visualization | Keep local to the view unless the user explicitly shares or restores them. |
+| Selection and navigation | Originating view, then receiving view | Send an occurrence with source revision and identity; each receiving view accepts and batches its own state change. |
+| Theme and shared panel preferences | Application coordinator | Publish versioned state; reopening surfaces receive the current value. |
+| Document text version and diagnostics | Editor session and language service | Associate results with the document version and route them to the intended session. |
+
+An asynchronous layout, request or GPU completion re-enters through its owner's acceptance step. Check the applicable revision, request identity and view or device generation before updating signals in a local batch. These identifiers serve different purposes, so a current revision alone does not make a completion from a disposed view eligible. Define conflict resolution for shared editable state at its authority; mailbox arrival order by itself is not a cross-host consistency contract.
+
 The following sketch gives that coordinator a concrete shape. The names describe the intended protocol; they are not declarations of an existing runtime API:
 
 ```fsharp

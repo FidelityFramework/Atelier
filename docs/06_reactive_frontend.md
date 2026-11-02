@@ -1,6 +1,6 @@
 # 06 - Reactive Frontend: Fickl, Ranvier and WREN
 
-WREN applications use a WebView or browser as a visual surface and can connect that surface to native Clef services. **While the frontend is F# compiled to JavaScript, the selected compiler is Fickl and the selected reactive model is Ranvier.** BAREWire supplies shared typed encoding across its supported JavaScript, .NET and native Clef paths. Xantham supplies generated F# bindings to the selected web APIs and libraries. Each host supplies the WebView integration and platform services needed by that deployment.
+WREN applications use a WebView or browser as a visual surface and can connect that surface to native Clef services. **For an F# frontend compiled to JavaScript, the selected compiler is Fickl and the selected reactive model is Ranvier.** Fickl provides the F#-to-JavaScript compilation path, while Ranvier supplies the state and effect model shared by the frontend's components. BAREWire supplies shared typed encoding across its supported JavaScript, .NET and native Clef paths. Xantham supplies generated F# bindings to the selected web APIs and libraries. Each host supplies the WebView integration and platform services needed by that deployment.
 
 Atelier is the in-house example for an editor, graph visualizer and compiler-services client. The same arrangement should support independently packaged applications with their own data and behavior. It can also run in a regular browser when the required data and services are available there.
 
@@ -84,6 +84,8 @@ For each component, establish:
 - how a component is mounted, focused, detached and disposed;
 - how editor, terminal and panel state survive or intentionally reset when a view is recreated; and
 - how keyboard interaction, assistive technology, localization and platform input methods are supported.
+
+The editor's LSP client communicates with CAC through a transport carried by the WREN host. The host routes requests, notifications and responses to the CAC process and back to the correct editor session. Document versions travel with the corresponding updates and results, so a late diagnostic or navigation result can be checked against the text it describes. A closed or replaced document retires its pending requests and subscriptions. CAC is the editor-facing source of language-service results; the frontend renders those results and manages presentation state. The earlier transport sketch is in [the editor integration reference](02_solid_components.md).
 
 Clef compiler facts come from the admitted CCS/Baker and Lattice interfaces. A frontend parser can support coloring or responsive presentation, but it does not become a separate authority for source semantics. A browser-side graph layout likewise positions a projection without adding a compiler relationship or proving an obligation.
 
