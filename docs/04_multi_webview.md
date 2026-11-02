@@ -2,15 +2,27 @@
 
 A WREN application can place its editor, graph visualizations, debugger and other tools in WebViews suited to their different interaction needs. Atelier is the in-house example: a developer can edit on one display while exploring a program hypergraph on another. The same approach can serve applications that combine interactive forms, dense charts, live data and native services.
 
+Ranvier Native adds a distinct way to realize those surfaces: native application and reactive view code reach WebCore's DOM through a native ABI, without a Fickl-compiled application or page JavaScript. The WebView and browser descriptions below describe the conventional browser-hosted path; use the same surface, state and responsiveness questions for native WebCore, and verify its own window, event-loop and GPU-presentation contracts. See [Ranvier Native and the browser target](06_reactive_frontend.md#ranvier-native-and-the-browser-target).
+
 The architectural goal is a responsive application in two complementary senses. **Ranvier makes related state changes coherent and propagates them to the views that depend on them.** Work scheduling, rendering and GPU acceleration keep input and presentation responsive as the amount of work grows. Both need deliberate boundaries and measurement on each host.
 
 ## From WrenHello to multiple surfaces
 
-WrenHello demonstrates the foundation on Linux: a native Clef host uses Farscape-generated WebKitGTK bindings to embed a WebView. Its existing frontend uses F# compiled with Fable and Partas.Solid, with a bounded compact ASCII message bridge. The WREN direction standardizes the F# frontend on **Fickl and Ranvier**. Xantham generates JavaScript-facing bindings, with D3 and graphics APIs as targets for visualizations.
+WrenHello demonstrates the earlier WebView foundation on Linux: a native Clef host uses Farscape-generated WebKitGTK bindings to embed a WebView. Its existing frontend uses F# compiled with Fable and Partas.Solid, with a bounded compact ASCII message bridge. The browser-targeted F# direction uses **Fickl and Ranvier**, and Xantham generates JavaScript-facing bindings. Ranvier Native instead connects native application code to WebCore through its native ABI.
 
 BAREWire already supplies typed encoding, decoding and framing across JavaScript, .NET and native Clef. Integrating it with a particular WREN host transport is an application integration step. WrenHello describes BAREWire over a local WebSocket as a direction for its bridge. Each host must establish its own transport lifecycle and access policy. The [reactive frontend chapter](06_reactive_frontend.md) describes the frontend contract and integration sequence.
 
 A WebView is a separate visual and document context with its own frontend state and lifetime. Whether WebViews use separate operating-system processes, JavaScript threads, GPU processes or devices is decided by the host and engine. Some resources may be shared. A separate surface therefore gives the application a useful ownership and presentation boundary, while isolation, concurrency, crash recovery and performance must be established for the actual host.
+
+### Root and child windows
+
+One useful distinction for a host investigation is between a root window and a child window. Shayan Habibi recalls a root-window concept that could operate in a different process, with the associated WebCore setup, while a child window behaved as its name suggests. Confirm the precise behavior for the engine and host version. A native window hierarchy, a document context, a JavaScript execution context where present, and an operating-system process describe different aspects of the application.
+
+For each host, identify how a root is created, how child windows and their WebViews are attached, which process and event-loop boundaries actually result, and what happens when the root or a child closes or crashes. Include the setup cost, resource sharing, input latency and GPU behavior in the multi-surface measurements. Ranvier still maintains each frontend's reactive state according to its own lifecycle; a parent-child window relationship does not itself synchronize those state graphs.
+
+For Ranvier Native, first establish which host Shayan's observation describes. Test one WebCore host and window, then a second host, page or window using the supported API. Determine whether reactive graphs are scoped per surface or shared by surfaces on a host thread, and how batching and disposal work in the chosen arrangement. Record host-thread and event-loop placement, first-versus-additional setup time and memory, and cleanup when one surface closes. While a background layout prepares a scene, measure typing latency as accepted updates return to the host loop. On a supported GPU-presenter configuration, compare frame pacing and recovery with the CPU-paint fallback. These measurements reveal which forms of concurrency the actual host supports.
+
+The following diagram shows the browser/WebView form. Ranvier Native uses native WebCore hosts and their presenter in place of the browser frontend and script bridge.
 
 ```mermaid
 flowchart TB
@@ -118,7 +130,7 @@ Cancellation saves resources when available. Generation checks remain necessary 
 
 D3 and the graphics renderer play complementary roles. D3 provides scales, transformations, force layouts and shape generation through Xantham-generated bindings. Its standard force simulation is two-dimensional and mutates node coordinates, so run it on a view-owned copy of the projection. Its many-body force uses a Barnes–Hut approximation. A genuinely three-dimensional layout or spatial spline requires an appropriate 3D implementation; rotating a layered 2D layout is a different and often useful 2.5D presentation.
 
-Canvas 2D is a useful flat reference and a portable rendering option. WebGL 2 can accelerate graphics on supported hosts. **WebGPU is the strategic path for dense scenes, interactive camera movement and compute-assisted visual work.** The renderer may use GPU buffers, shaders and instanced geometry for nodes and connections, while D3 continues to supply scales, layout or curves. A D3 force simulation does not automatically move to the GPU because its output is drawn with WebGPU. A GPU layout requires an explicit compute implementation and comparison of its behavior and results with the chosen reference.
+For the browser path, Canvas 2D is a useful flat reference and WebGL 2 can accelerate graphics on supported hosts. **WebGPU is a strategic path for dense scenes, interactive camera movement and compute-assisted visual work.** The renderer may use GPU buffers, shaders and instanced geometry for nodes and connections, while D3 supplies scales, layout or curves. A D3 force simulation does not automatically move to the GPU because its output is drawn with WebGPU. A GPU layout requires an explicit compute implementation and comparison with the chosen reference. Ranvier Native needs its own renderer and presentation integration, including the native WebGPU investigation described in [the binding design](14_wren_webgpu_bindings.md#native-webgpu-and-presentation).
 
 Use the GPU where it helps the actual workload. A small graph may be faster and simpler on the CPU; large transfers, buffer allocation or synchronous readback can erase a rendering gain. Keep the editor's text and controls responsive while graph work proceeds:
 
@@ -152,7 +164,7 @@ Floating windows and multiple monitors are valuable for editing and visualizatio
 
 Use a repeatable workload on each named host rather than assuming a fixed frame rate or an inherent advantage over another application framework. The [visualization roadmap](15_visualization_roadmap.md) describes the wider acceptance sequence. For the multi-surface case, exercise these behaviors together:
 
-1. Compile the Fickl/Ranvier frontend and verify local batching, derived values, owner disposal and asynchronous completion in the actual WebView. Record the versions and host configuration.
+1. Run a Ranvier Native frontend through the selected WebCore host and verify batching, derived values, owner disposal and asynchronous completion. For the browser path, compile the Fickl/Ranvier frontend and perform the corresponding checks in the actual WebView. Record versions and host configuration for each.
 2. Edit and navigate continuously while a bounded graph projection is delivered and its D3 layout runs. Compare main-thread and supported worker placement. Measure input-to-feedback latency, layout time, frame-time percentiles, CPU and memory.
 3. Render the same graph and interactions with Canvas 2D, supported WebGL 2 and WebGPU paths. Record graph size, incidence count, labels, viewport, GPU, driver and engine. Measure update-to-stable time, frame pacing, transfer costs and selection accuracy, including camera movement.
 4. Deliver R1's layout after R2 is accepted, test a missing delta base, and complete old G1 work after a G2 device recreation. Confirm that the visible geometry, picking and details remain coherent with the accepted revision.
@@ -162,7 +174,7 @@ These tests establish the behavior of a named frontend, renderer and host. They 
 
 ## Related documents
 
-- [Reactive frontend: Fickl, Ranvier and WREN](06_reactive_frontend.md)
+- [Reactive frontend: Ranvier Native, browser and WREN](06_reactive_frontend.md)
 - [WREN graphics and interactive visualization](05_webgpu.md)
 - [Seeing the program hypergraph](12_hypergraph_visualization.md)
 - [Visualization integrity](13_visualization_integrity.md)

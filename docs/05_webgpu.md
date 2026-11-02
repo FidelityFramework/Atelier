@@ -1,14 +1,14 @@
 # 05 - WREN Graphics and Interactive Visualization
 
-WREN is a foundation for responsive applications across desktop, browser and mobile hosts. A shared web frontend can communicate with a native Clef backplane through BAREWire and use the host's WebView for presentation. The same visual can also run in a regular browser when its required data and services are available there. Each native deployment still needs its own host, packaging and platform contracts.
+WREN is a foundation for responsive applications across desktop, browser and mobile hosts. Ranvier Native can run application code natively and reach WebCore's DOM through native interop. A separate browser frontend can communicate with a native Clef backplane through BAREWire and use a WebView or regular browser for presentation. Each deployment needs its own host, packaging and platform contracts.
 
 Atelier is a demanding in-house example: an editor that can make a live Program Semantic Graph and its proof evidence inspectable. A financial application, scientific dashboard or engineering tool can use the same binding, reactive, graphics and communication foundations with its own domain model. These documents live in Atelier because it brings the pieces together, while the intended capability serves WREN and Fidelity applications more broadly.
 
 ## The selected direction
 
-While WREN's frontend is F# compiled to JavaScript, **standardize on Fickl and Ranvier**. Fickl compiles the frontend. Ranvier manages changing state and derived values. Xantham generates F# bindings from the selected TypeScript declarations. BAREWire supplies a shared typed representation across its supported .NET, JavaScript and native Clef compilation paths. Farscape and the desktop packages connect the native host to platform services.
+For the native path, evaluate Ranvier's native WebCore backend, its native DOM ABI and the available presentation and GPU integrations. For a browser-targeted F# frontend, use Fickl and Ranvier: Fickl compiles the frontend and Ranvier manages changing state and derived values. Xantham generates F# bindings from the selected TypeScript declarations for that JavaScript environment. BAREWire supplies a shared typed representation across actual communication boundaries. Farscape and the desktop packages connect native hosts to platform services.
 
-Use Xantham's original D3 binding target for data, layout, scales and curves. Pursue WebGPU as the strategic graphics and compute API, with a proposed **Fidelity.WebGPU** browser-facing library containing faithful generated bindings and a distinct authored layer for resource, numeric and layout contracts. Evaluate WebGL 2 as a graphics compatibility path and Canvas 2D as a reference and practical renderer for bounded views. Choose each based on the product's capability and behavior requirements, rather than promising that every renderer supports every operation.
+For the browser path, use Xantham's original D3 binding target for data, layout, scales and curves. Pursue WebGPU for graphics and compute with a proposed **Fidelity.WebGPU** browser-facing binding and a distinct authored layer for resource, numeric and layout contracts. Evaluate WebGL 2 and Canvas 2D for appropriate browser experiences. In parallel, investigate a .NET-consumable native WebGPU binding for the initial NativeAOT application and a Farscape-generated Clef binding for the Clef path. Establish how either renderer's output reaches its selected presentation surface. [Native WebGPU and presentation](14_wren_webgpu_bindings.md#native-webgpu-and-presentation) develops those paths.
 
 ```text
 Application data or CCS/Baker-published graph facts
@@ -24,7 +24,7 @@ Fickl frontend → Ranvier state → D3 / layout / visual snapshot
                                Browser or WebView
 ```
 
-The native host and its Farscape bindings provide the platform boundary when a deployment needs them. GPU commands for a WebView visual can remain on the frontend, without a native round trip for each frame. Native GPU computation is a separate path for workloads that justify it. Native GPU texture sharing with a WebView needs explicit host, device, synchronization and lifetime support.
+The diagram describes the browser path. Ranvier Native instead calls its WebCore backend through native interop; browser JavaScript imports and `navigator.gpu` cannot be presumed there. Establish which native DOM, canvas and GPU APIs are exposed and how the native host presents their results. Native GPU computation is a separate path for workloads that justify it. Sharing a native GPU texture with a browser WebView needs an explicit host, device, synchronization and lifetime contract.
 
 ## What makes the design distinctive
 
@@ -44,9 +44,9 @@ These properties matter beyond Atelier. An independently packaged financial plan
 
 ## Current baseline and next step
 
-BAREWire already provides shared encoding, schema and framing across its supported targets. WrenHello currently demonstrates an F#/Partas.Solid frontend compiled through Fable, bundled into a Linux WebKitGTK host, with a bounded script-message bridge. The selected Fickl/Ranvier frontend, integration of the existing BAREWire foundation with WrenHello's chosen transport, graph export and GPU renderer each need their own acceptance evidence. The future Clef-to-JavaScript/JSIR path is a separate horizon. It does not follow automatically from existing F# bindings.
+BAREWire already provides shared encoding, schema and framing across its supported targets. WrenHello demonstrates an earlier F#/Partas.Solid frontend compiled through Fable, bundled into a Linux WebKitGTK host, with a bounded script-message bridge. Ranvier's native WebCore backend gives the next investigation a native application-to-DOM path. Separately, a Fickl/Ranvier browser frontend, integration of BAREWire with a chosen transport, scoped graph delivery and GPU rendering each require evidence for their own deployment. The future Clef-to-JavaScript/JSIR path is another target.
 
-Start with a bounded financial chart and a genuine multi-participant hyperedge. Generate and compile the minimum D3/WebGPU bindings, run the same frontend in a regular browser and the actual WrenHello WebView, and exercise late revisions, layout conversion, picking, disposal and device loss. Then test a layered spline view and an orbiting camera against the same graph and evidence contract.
+Start with a bounded financial chart and a genuine multi-participant hyperedge. On Ranvier Native, establish the actual DOM, drawing and GPU surfaces and build the smallest useful visual through the native ABI. For a browser deployment, generate and compile the minimum D3/WebGPU bindings and run the frontend in a browser and the chosen WebView. On both paths exercise late revisions, layout conversion, picking, disposal and device loss where applicable. Then test a layered spline view and an orbiting camera against the same graph and evidence contract.
 
 Atelier aims to be lighter and more responsive than comparable Electron-based editors. Establish that with named applications, equivalent workloads, pinned builds and measurements of startup, memory, input latency, frame pacing and graph-update time. WebGPU, a system WebView and background workers create opportunities to improve those results; their presence alone is not a benchmark.
 

@@ -4,6 +4,8 @@ The specific graph gives Atelier a view of the program as Clef understands it. C
 
 CCS elaborates and saturates the Program Semantic Graph (PSG). Baker recipes settle source semantics and proof premises, and publication assembles a `Fidelity.PSG` revision for downstream consumers. Composer uses Alex for passive Element, Pattern, and Witness composition. Atelier can query and present published facts without duplicating source-language inference. The [pipeline walk](https://clef-lang.com/docs/internals/pipeline/learning-to-walk/), [Program Hypergraph preprint](https://arxiv.org/abs/2603.17627), and [PHG specification](https://clef-lang.com/spec/draft/program-hypergraph/) provide the background.
 
+The authoritative graph construct uses the BAREWire-generated binary PSG representation. JSON dumps of nanopasses and the final graph are projections for inspection. The knowledge layer associates its anchors and observations with the published graph revision, whether a particular presentation uses a binary graph consumer or an inspection projection.
+
 ## Compiler Facts and Proof Status
 
 The graph gives developers and tools a common place to ask questions about a program:

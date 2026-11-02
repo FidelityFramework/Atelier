@@ -6,13 +6,13 @@
 
 > **Note:** This project is currently in the preliminary design phase. The documentation describes the intended architecture and features. Implementation has not yet begun.
 
-**Frontend direction:** While WREN uses F# compiled to JavaScript, standardize on Fickl and Ranvier. References below to Partas.Solid and Fable document the earlier WrenHello baseline. Clef-to-JavaScript through JSIR is a later target, with its own implementation and conformance gates. See the [visualization strategy](docs/05_webgpu.md).
+**Frontend direction:** Explore Ranvier's native WebCore backend for WREN applications: the application runs natively and its reactive views reach the DOM through native interop, without compiling the application to JavaScript. Fickl and Ranvier remain a browser-targeted path where a JavaScript deployment is wanted. Partas.Solid and Fable describe the earlier WrenHello baseline. Clef-to-JavaScript through JSIR is a later target with its own conformance work. See the [reactive frontend](docs/06_reactive_frontend.md) and [visualization strategy](docs/05_webgpu.md).
 
 **The Fidelity Framework IDE - Self-Hosting via WRENStack**
 
-Atelier (French for "workshop" or "studio") is the professional development environment for the Fidelity ecosystem and the commercial home of the Clef toolchain. It is designed to be **self-hosting** using the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**ebView + **R**eactive + **E**mbedded + **N**ative). WrenHello demonstrates a Composer-compiled Clef host and an F#/Fable frontend. Atelier's selected Fickl and Ranvier frontend and eventual Clef self-hosting remain to be established (see [Self-Hosting WRENStack](#self-hosting-wrenstack)).
+Atelier (French for "workshop" or "studio") is the professional development environment for the Fidelity ecosystem and the commercial home of the Clef toolchain. It is designed to be **self-hosting** using the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**ebView + **R**eactive + **E**mbedded + **N**ative). WrenHello demonstrates a Composer-compiled Clef host and an F#/Fable frontend. Ranvier's native WebCore backend offers a second route to web-style views, and eventual Clef self-hosting remains the objective (see [Self-Hosting WRENStack](#self-hosting-wrenstack)).
 
-As a Clef IDE, Atelier is designed to witness the Clef Compiler Service's Program Semantic Graph into views: PSG visualization, nanopass inspection, proof-obligation surfacing, and delimited continuation debugging. It computes no semantic fact of its own. As a WRENStack application, it will combine a reactive WebView frontend, a Composer-compiled native host and BAREWire communication.
+As a Clef IDE, Atelier is designed to witness the Clef Compiler Service's Program Semantic Graph into views: PSG visualization, nanopass inspection, proof-obligation surfacing, and delimited continuation debugging. It computes no semantic fact of its own. As a WRENStack application, it combines reactive views with native services and BAREWire communication where execution crosses a boundary.
 
 While FidelityUI (a future native UI model) is planned, WRENStack provides an interim path using proven web technology with native-quality performance.
 
@@ -25,11 +25,11 @@ Atelier is both the **tool** and the **demonstration**:
 
 The self-hosting aspect is intentional: Atelier will be used to develop Fidelity applications, including future versions of Atelier itself. This creates a tight feedback loop where improvements to the compiler directly benefit the IDE, and IDE requirements drive compiler evolution.
 
-Self-hosting holds today for one part of the application and is a goal for the other two:
+WrenHello demonstrates a Clef-compiled host. Atelier's native-view and compiler-service paths bring additional steps toward self-hosting:
 
-- **Native host**: Clef compiled by Composer to machine code, no .NET runtime in the shipped host. This half is proven by the WrenHello exemplar.
-- **Front end**: Fickl and Ranvier are the selected F#-to-JavaScript direction. WrenHello's Partas.Solid/Fable frontend is the current integration baseline; migration and package compatibility remain to be established. Composer's JSIR pathway is the later Clef frontend target, with its language and reactive coverage subject to implementation and conformance.
-- **Compiler services**: CCS (the Clef Compiler Service) and CAC (ClefAutoComplete, the LSP server) are .NET processes. A Composer-compiled host cannot link them. Atelier reaches them through two channels only: CAC as a child process over standard LSP, and the artifact files CCS and Composer write beside a build. This is the second half of the self-hosting gap and closes only when CCS is Clef-compilable.
+- **Native host**: WrenHello demonstrates a Clef host compiled by Composer without a .NET runtime. The initial Ranvier Native investigation instead uses the existing F#/.NET NativeAOT application and packaged WebCore backend. Connecting that application to Clef services has its own integration boundary.
+- **Front end**: Ranvier's native WebCore backend offers a native application and DOM path. A future Clef-native frontend requires a suitable Ranvier view implementation and WebCore bindings; the current F# implementation does not establish that result. Fickl and Ranvier provide a separate browser direction, with Composer's JSIR pathway as its later Clef target.
+- **Compiler services**: CCS (the Clef Compiler Service) and CAC (ClefAutoComplete, the LSP server) are .NET processes. Atelier's native host can reach CAC as a child process over standard LSP and consume compiler-produced graph data and build artifacts across their respective boundaries. The PSG's BAREWire-generated binary representation is the authoritative graph construct. JSON phase files are inspection projections. Compiling CCS with Clef is the path to a self-hosted compiler service.
 
 Like its namesake bird, WRENStack applications are designed to be lightweight and quick to start. Atelier embodies this philosophy - a craftsman's tool that respects computational resources while providing the sophisticated tooling that compiler development demands.
 
@@ -47,7 +47,7 @@ flowchart TB
 
         subgraph core["Native Host (Composer-compiled)"]
             lsp["LSP Client"]
-            reader["Artifact Reader<br/>(PSG phases, obligations, MLIR)"]
+            reader["Graph and Artifact Reader<br/>(BAREWire PSG, projections, MLIR)"]
             runner["Build Runner<br/>(composer compile)"]
             runtime["Runtime Reader<br/>(process memory, perf samples)"]
         end
@@ -72,11 +72,13 @@ flowchart TB
     runner -->|"spawns"| composer
     cac --> ccs
     composer --> ccs
-    ccs -.->|"01_psg0 .. 05_psg2, 02/04 recipes,<br/>06a/06b obligations"| reader
+    ccs -.->|"BAREWire PSG; JSON phase and<br/>obligation projections"| reader
     composer -.->|"07_output.mlir, 08_output.ll"| reader
 ```
 
-The host boxes name what the host does with facts, not where facts come from. Every semantic fact the views show is read from the saturated PSG that CCS produced; the Artifact Reader and the LSP client transport, they do not infer. No host-facing API or LSP method exposes the graph today; the artifacts are files on disk, and a serialization contract for a non-.NET consumer is a CCS-owned contract item, not something Atelier defines.
+The diagram shows the earlier browser/WebView deployment. The initial Ranvier Native investigation has an F#/.NET NativeAOT view application and a packaged WebCore backend. A separate Clef service or host can communicate across an explicit boundary. Its final process arrangement is an integration decision.
+
+The host boxes name what the host does with facts, not where facts come from. CCS publishes the authoritative PSG in its BAREWire-generated binary representation. JSON dumps of nanopasses and the final PSG are projections for inspection, alongside other build artifacts. Atelier reads and presents graph facts; it does not infer them. Integrating a scoped graph subscription with a particular host still needs a defined delivery, lifetime and access contract.
 
 ## Why Atelier?
 
@@ -86,9 +88,9 @@ Atelier takes a different path: purpose-built tooling for the Fidelity ecosystem
 
 | Capability | VSCode/Electron | NeoVim | Atelier |
 |------------|-----------------|--------|---------|
-| Memory footprint | ~500MB+ | ~50MB | ~80MB target (native + WebView) |
+| Memory footprint | ~500MB+ | ~50MB | Measure for each native or WebView deployment |
 | Startup time | 2-5 seconds | <100ms | <200ms target |
-| PSG visualization | Plugin (limited) | Not practical | Planned D3 integration |
+| PSG visualization | Plugin (limited) | Not practical | Planned graph views; D3 is a browser-path candidate |
 | Delimited continuation debugging | Not supported | Not supported | Planned first-class support |
 | Multi-WebView architecture | Varies by application | N/A | Planned coordinated WebViews; isolation depends on host |
 | WebGPU compute | Limited | N/A | Planned direct access |
@@ -97,7 +99,7 @@ Atelier takes a different path: purpose-built tooling for the Fidelity ecosystem
 
 1. **Computational Responsibility**: Justify every byte of memory, every CPU cycle
 2. **Compiler-Aware Tooling**: Witness the Clef Compiler Service's PSG and Composer's witnessed MLIR; compute no semantic fact in the IDE
-3. **Native Performance**: Target native compilation of the host by Composer, no managed runtime in the shipped host (the front-end toolchain is interim .NET, see above)
+3. **Native Performance**: Measure the NativeAOT view application and pursue a Composer-compiled Clef host and eventual Clef frontend as their integration matures
 4. **Web-Class UI**: Use Ranvier's reactive model with an admitted editor component
 5. **Multi-WebView Architecture**: Explore isolation for debugging, monitoring and visualization under each host's actual scheduling capabilities
 
@@ -105,28 +107,30 @@ Atelier takes a different path: purpose-built tooling for the Fidelity ecosystem
 
 The WREN Stack eliminates the false choice between native performance and modern UI:
 
-- **WebView as rendering surface**: System WebView (WebKitGTK, WKWebView, WebView2) instead of bundled Chromium
-- **Reactive UI in the WebView**: Ranvier state in an F# frontend compiled with Fickl. WrenHello's earlier frontend provides host and bridge evidence; the selected frontend and package compatibility require validation. Clef through Composer's JSIR pathway is a later target.
+- **Web rendering**: Explore the packaged Ranvier WebCore backend for native views and system WebViews for the browser-hosted path, with packaging and memory measured for each
+- **Reactive UI**: Ranvier state and views can target native WebCore through native DOM interop. A browser deployment has its own Fickl-compiled JavaScript path. WrenHello's earlier frontend provides host and bridge evidence, and Clef through Composer's JSIR pathway is a later target.
 - **Embedded assets**: HTML, CSS, and assets frozen into the binary's read-only memory
-- **Native Clef logic**: Compiled through Composer to machine code, communicating via BAREWire IPC
+- **Native Clef logic**: Compiled through Composer to machine code, with BAREWire used across admitted communication boundaries
 
 The goal is a responsive application with low startup and resource costs. The [visualization strategy](docs/05_webgpu.md) defines measurements against named baselines.
 
 ## Technology Stack
 
-### Frontend (WebView)
-- **Fickl and Ranvier**: Selected F#-to-JavaScript compiler and reactive model; their integration in Atelier remains to be validated
-- **WrenHello baseline**: Its earlier Partas.Solid/Fable frontend provides a host and bridge reference for the transition to Fickl and Ranvier
+### Frontend
+- **Ranvier**: Reactive model and views, with native WebCore and browser deployment paths. Fickl is the selected F#-to-JavaScript compiler for the browser path.
+- **WrenHello baseline**: Its earlier Partas.Solid/Fable frontend provides a WebView host and bridge reference
 - **CodeMirror 6**: Modern editor; the LSP client for CAC. A Lezer grammar for Clef is coloring-only: every structural or semantic fact (folding by meaning, structure-aware navigation, diagnostics) comes from CCS through LSP and the PSG, never from the Lezer tree. That grammar would be a third grammar of Clef beside CCS's parser (the authority) and the TextMate grammar in clef-grammar that Lattice consumes; deriving it from clef-grammar bounds the maintenance cost
 - **Dockview**: Candidate for panel docking and floating windows, with an adapter for the selected reactive frontend
 - **D3.js**: PSG graph visualization
 - **xterm.js**: Terminal emulation with WebGL renderer
 
+CodeMirror, Dockview, D3.js and xterm.js are JavaScript components for the browser/WebView path. The native WebCore path needs its own editor, docking, graph-layout and terminal integrations; their availability cannot be inferred from these browser libraries.
+
 ### Backend (Native)
-- **Composer-compiled host**: No .NET runtime in the shipped host binary
+- **Composer-compiled host**: WrenHello demonstrates a host without a .NET runtime. The current Ranvier Native F# application uses .NET NativeAOT and a packaged WebCore backend.
 - **BAREWire**: Shared typed encoding, schema and framing for .NET, JavaScript and native Clef. WrenHello's integrated BAREWire transport is a separate step from its current script-message bridge.
 - **CAC (ClefAutoComplete)**: The Clef language server, a .NET process reached over standard LSP as a child process; not linked into the host
-- **Toolchain artifacts**: The files CCS and Composer write beside a build, read from disk: `01_psg0.json`, `02_intrinsic_recipes.json`, `03_psg1.json`, `04_saturation_recipes.json`, `05_psg2.json`, `06a_obligations.json`, `06b_obligations.smt2`, `07_output.mlir`, `08_output.ll`
+- **Graph and toolchain artifacts**: The BAREWire-generated PSG is the authoritative graph construct. JSON phase and recipe dumps, obligation reports, SMT text, MLIR and LLVM IR are projections or related build artifacts for inspection.
 - **PTY integration**: Native terminal support
 
 ### Platform Layer
@@ -142,7 +146,7 @@ Every capability below is a view of facts that the Clef Compiler Service settles
 
 Atelier contemplates providing real-time visualization of CCS's **Program Semantic Graph** - the hypergraph that carries native types, coeffect annotations, obligations, and semantic relationships from elaboration through saturation.
 
-What the viewer would show is what CCS already writes when intermediate emission is enabled: `01_psg0.json` (elaborated), `02_intrinsic_recipes.json` (intrinsic recipe fan-out and fold-in), `03_psg1.json`, `04_saturation_recipes.json` (Baker's saturation recipes), `05_psg2.json` (saturated), with the `02a`/`04a` recipe diagnostics beside them. Nodes carry `Type`, `ArenaAffinity`, `LayoutHint`, and `Metadata`; hyperedges carry an `EdgeClass` (Structural, Reference, Provenance, Obligation) and an `EdgeRole`. Coeffects are node annotations read from the graph, never recomputed in the viewer.
+The viewer can present the authoritative BAREWire PSG and inspect nanopass and final-graph JSON projections where intermediate emission is enabled. Those projections include `01_psg0.json`, `02_intrinsic_recipes.json`, `03_psg1.json`, `04_saturation_recipes.json` and `05_psg2.json`, with recipe diagnostics beside them. Nodes carry `Type`, `ArenaAffinity`, `LayoutHint`, and `Metadata`; hyperedges carry an `EdgeClass` (Structural, Reference, Provenance, Obligation) and an `EdgeRole`. Coeffects are node annotations read from the graph, never recomputed in the viewer.
 
 The goal: watch your code transform from syntax to elaboration to saturation (recipe fan-out and fold-in) to the saturated PSG with its obligations, and then to the MLIR that Composer's Alex witnesses from it (`07_output.mlir`). The Photographer Principle, the Zipper, and Templates are Alex's vocabulary for its side of the witness; they are not the PSG's structure and not Atelier's.
 
@@ -160,7 +164,7 @@ Atelier can explore separate WebViews for editing, debugging, visualization and 
 
 ### WRENStack Design-Time Experience
 
-The earlier Fable/Partas.Solid design considered [WRENStack.Tooling](https://github.com/speakeztechnologies/WRENStack.Tooling). Its compatibility with the selected Fickl/Ranvier frontend needs validation. Its design-time features include:
+The earlier Fable/Partas.Solid design considered [WRENStack.Tooling](https://github.com/speakeztechnologies/WRENStack.Tooling). Its compatibility with the Fickl/Ranvier browser frontend needs validation. Its design-time features include:
 
 - **Source Maps** - Debug F# source, not generated JavaScript
 - **Signal Inspector** - Browser devtools integration for SolidJS signals
@@ -179,7 +183,7 @@ See the [docs/](./docs/) folder for detailed documentation:
 - [03_unique_features.md](./docs/03_unique_features.md): Delimited continuations, PSG visualization
 - [04_multi_webview.md](./docs/04_multi_webview.md): Multi-WebView architecture
 - [05_webgpu.md](./docs/05_webgpu.md): WREN graphics and interactive visualization
-- [06_reactive_frontend.md](./docs/06_reactive_frontend.md): Fickl and Ranvier frontend architecture
+- [06_reactive_frontend.md](./docs/06_reactive_frontend.md): Ranvier Native and browser frontend architecture
 - [07_lezer_parsing.md](./docs/07_lezer_parsing.md): Lezer, CodeMirror's incremental parsing foundation
 - [08_tooling_integration.md](./docs/08_tooling_integration.md): Performance tooling, hardware collection and display against PSG layout facts
 - [09_flow_loss_analysis.md](./docs/09_flow_loss_analysis.md): Data-flow parallelism analysis and hardware partnership strategy

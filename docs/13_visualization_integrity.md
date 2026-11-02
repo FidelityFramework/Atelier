@@ -2,7 +2,7 @@
 
 WREN applications should let a user trust what a picture refers to. That means preserving the input revision, the identities and relationships in the selected data, the evidence attached to it, and the association between a displayed result and the data that produced it. A valid GPU command is one step in that chain. Atelier's compiler graph is a demanding in-house case for a capability that should also support product charts, engineering views and other visualizations.
 
-The initial Atelier case uses CCS/Baker's published graph facts, a BAREWire projection, a Fickl-compiled frontend with Ranvier, and an admitted Canvas, WebGL or WebGPU renderer. Other products can supply their own authoritative data and domain contracts through the same boundaries. The intended roles and experiments are described in the [visualization strategy](05_webgpu.md). This document defines the cross-boundary integrity questions for those experiments. The graph export, renderer and proof-preserving GPU path remain proposed work.
+The Atelier case uses CCS/Baker's published graph facts, an admitted BAREWire graph view, Ranvier state and a renderer appropriate to the deployment. Ranvier Native reaches WebCore through native interop. A browser deployment can use a Fickl-compiled frontend and supported Canvas, WebGL or WebGPU APIs. Other products can supply their own authoritative data and domain contracts. The [visualization strategy](05_webgpu.md) describes the separate target experiments. The same integrity questions apply across them, but a browser API or JavaScript binding does not establish its native counterpart.
 
 ## What a trustworthy view must preserve
 

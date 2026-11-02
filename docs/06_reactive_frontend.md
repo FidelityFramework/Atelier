@@ -1,12 +1,29 @@
-# 06 - Reactive Frontend: Fickl, Ranvier and WREN
+# 06 - Reactive Frontend: Ranvier Native, Browser and WREN
 
-WREN applications use a WebView or browser as a visual surface and can connect that surface to native Clef services. **For an F# frontend compiled to JavaScript, the selected compiler is Fickl and the selected reactive model is Ranvier.** Fickl provides the F#-to-JavaScript compilation path, while Ranvier supplies the state and effect model shared by the frontend's components. BAREWire supplies shared typed encoding across its supported JavaScript, .NET and native Clef paths. Xantham supplies generated F# bindings to the selected web APIs and libraries. Each host supplies the WebView integration and platform services needed by that deployment.
+WREN can use Ranvier views in a native application and also target the browser. **Ranvier's native WebCore backend runs application code natively and reaches WebCore's DOM through a native ABI.** It does not compile that application to JavaScript. Where an application also targets a browser, Fickl is the selected F#-to-JavaScript path and Ranvier supplies its reactive model. BAREWire carries typed data across boundaries that actually exist in the chosen deployment. Xantham's TypeScript bindings serve JavaScript APIs; native WebCore interop has its own ABI and binding path.
 
 Atelier is the in-house example for an editor, graph visualizer and compiler-services client. The same arrangement should support independently packaged applications with their own data and behavior. It can also run in a regular browser when the required data and services are available there.
 
-This chapter sets the frontend contract and integration plan. WrenHello demonstrates a Linux WebKitGTK host and an earlier F#/Fable frontend. The chosen Fickl/Ranvier migration, integrated BAREWire transport and Atelier implementation require their own acceptance evidence.
+This chapter sets the frontend contract and integration plan. WrenHello demonstrates a Linux WebKitGTK host and an earlier F#/Fable frontend. It is a useful host and bridge reference. Ranvier Native introduces a different application-to-DOM path and should be evaluated directly for Atelier.
 
-## The frontend's place in WREN
+## Ranvier Native and the browser target
+
+WebCore is WebKit's DOM, styling, layout and rendering engine. A browser normally accepts DOM updates from page JavaScript. Ranvier Native reaches the engine through a native interface instead, while retaining web-style document and presentation concepts:
+
+```text
+Native:  F# / .NET NativeAOT → Ranvier → native WebCore ABI → DOM and rendering
+Browser: F# → Fickl → JavaScript → Ranvier → browser DOM → rendering
+```
+
+In the native path, an F# application runs Ranvier's reactive graph and view code natively. The WebCore backend reaches DOM operations through generated wrappers and a native ABI into the C++ engine. Page JavaScript is not the application's execution substrate. WebCore still has JavaScriptCore dependencies, so avoiding an application JavaScript runtime must not be described as eliminating all JavaScriptCore components from the native package.
+
+The current `Ranvier.View.WebCore` work records .NET and NativeAOT consumers, WebCore ABI bindings, native input and presentation, and cross-platform package and application checks. The newer application evidence supersedes the earlier draft where their implementation details differ. Its recorded qualifications include real IME and high-density Retina validation, accessibility beyond Windows UIA, and further platform coverage. This provides a concrete basis for the native investigation; it does not establish that Clef has already compiled the Ranvier implementation or that every browser API is exposed by the native ABI. See the [native backend design](../../Ranvier.View/docs/superpowers/specs/2026-10-28-native-webcore-backend-design.md) and [native application evidence](../../Ranvier.View/docs/superpowers/specs/2026-10-28-native-app-gaps.md), inspected at Ranvier.View revision `d995f328540ffb917f31991f13fd76420fe9106a`.
+
+The browser path compiles an F# frontend to JavaScript and runs it in a browser or a conventional WebView. Its TypeScript bindings, JavaScript modules and browser capability checks belong to that deployment. Shared view patterns and domain contracts are a portability goal; package compatibility, exact API coverage and observable behavior need checks on each backend. A native surface and a browser surface may both be useful in one product, but they are different execution paths.
+
+The native DOM call path does not need a BAREWire message for each local update. Use BAREWire where data crosses an actual process, application, device or transport boundary, including an admitted compiler-graph delivery. Native GPU access and native exposure of WebGPU or Canvas APIs also require their own backend and presentation contracts. Browser `navigator.gpu`, D3 JavaScript imports and browser workers cannot be assumed to exist in the native path.
+
+## The browser frontend's place in WREN
 
 ```text
 F# application frontend
@@ -69,13 +86,13 @@ This matters for an editor: an equality policy determines whether a derived upda
 
 WrenHello's existing example uses F#/Partas.Solid compiled through Fable and a Linux x86-64 WebKitGTK host compiled by Composer. Its typed counter commands and events use a compact ASCII script-message channel. The inbound binding records UTF-8 length and rejects messages larger than 4,096 bytes before copying. The application documents BAREWire over a localhost WebSocket as the intended later transport.
 
-That baseline supplies a concrete host, callback and lifecycle path to compare. The WREN direction in this chapter is Fickl and Ranvier. Migration needs an actual compiled frontend and an integration test with the native host. A retained frontend library or component needs an explicit adapter that preserves the selected state, event, batching and disposal behavior. No Solid-specific reactive runtime is a requirement of the selected design.
+That baseline supplies a concrete browser-host, callback and lifecycle path to compare. The browser direction uses Fickl and Ranvier; Ranvier Native takes the separate native path described above. A retained frontend library or component needs an explicit adapter that preserves the selected state, event, batching and disposal behavior.
 
 BAREWire's existing multi-target encoding, decoding, schema and framing are the foundation for the shared protocol. WrenHello needs to bind the selected shared codec and framing to its transport and exercise the endpoints, authentication or origin policy where relevant, bounds, shutdown and error handling together. The current bounded script-message bridge is not automatically a high-volume graph or GPU data channel. See [WrenHello](../../WrenHello/README.md) for its current host and bridge.
 
 ## Editor capabilities and browser components
 
-The frontend needs a text editor, docking or layout, diagnostics, navigation, search, terminal output and visual inspection. CodeMirror 6 and Dockview are candidates for editor and panel behavior. Generate or establish F# bindings for the selected APIs, then build a small Ranvier integration around their actual event and disposal behavior. Their use should not depend on a Solid-specific wrapper when the underlying library and selected integration can provide the required operation directly.
+The frontend needs a text editor, docking or layout, diagnostics, navigation, search, terminal output and visual inspection. CodeMirror 6 and Dockview are JavaScript candidates for the browser path. Generate or establish F# bindings for their selected APIs and integrate their event and disposal behavior with Ranvier. The native path needs independently established editor, docking, terminal and graph-layout components; those JavaScript libraries do not run there merely because WebCore renders its DOM.
 
 For each component, establish:
 
@@ -108,6 +125,10 @@ Clef's JavaScript/JSIR and JSX direction is the later frontend target. As it mat
 The eventual proof-bearing path can connect the source judgment, encoded data, frontend conversion and rendered or computed result to the delivered artifact. That requires stated assumptions and evidence for each boundary, including WebGPU and shader behavior where applicable. Successful type generation or a green source check is useful evidence for its own scope.
 
 ## Acceptance sequence
+
+Start by mounting a Ranvier view on the native WebCore backend, delivering input, updating reactive state and presenting the resulting pixels on the selected host. Record the pinned packages, ABI, engine, platform, lifecycle and actual deployment artifacts. Then exercise multiple surfaces, graph delivery, renderer access and GPU presentation as distinct integrations. Compare native and browser versions against the same interaction and data contracts where both are supported.
+
+For the separate browser path:
 
 1. Pin Fickl, Ranvier, Xantham, declaration sources, npm assets and the tested host. Record the compiled frontend artifact and its dependencies.
 2. Compile a small Ranvier frontend with Fickl. Exercise signals, memos, batching, async completion, equality policy and owner cleanup in a regular browser and the actual WrenHello WebView.

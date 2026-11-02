@@ -1,12 +1,14 @@
 # 14 - WREN, Xantham and WebGPU Bindings
 
-WREN applications need a shared reactive frontend that can draw detailed visualizations in a desktop WebView and in a browser. The selected F#-to-JavaScript path uses **Fickl and Ranvier**. Xantham supplies the route from TypeScript declarations to F# bindings, beginning with D3 and extending to WebGPU. A native Clef host supplies platform integration and application services; BAREWire supplies the typed communication contract. Atelier is the in-house exemplar for the complete design and adds compiler-aware graph inspection.
+WREN applications need reactive visuals across native and browser deployments. Ranvier Native reaches WebCore's DOM through a native ABI without compiling the application to JavaScript. The browser-targeted F# path uses **Fickl and Ranvier**; Xantham supplies its TypeScript-to-F# bindings, beginning with D3 and extending to WebGPU. A native Clef host supplies platform integration and application services, while BAREWire supplies typed communication across actual boundaries. Atelier is the in-house exemplar and adds compiler-aware graph inspection.
+
+The binding arrangements and `navigator.gpu` examples below describe the browser/WebView target. Native Ranvier needs its own WebCore ABI coverage, GPU and presentation integration, and platform evidence. A TypeScript declaration or JavaScript D3 module does not provide a native binding or runtime implementation. The two paths can share domain, reactive and visualization contracts while using different implementations.
 
 This chapter describes how these pieces fit across reusable Fidelity libraries and independently packaged products, what must be implemented, and what each target must demonstrate. Beancounter charts, scientific visualization and industrial control panels may share bindings, transport and lifecycle contracts while defining their own data and visual semantics. It is an integration design. A typed binding does not establish that a host exposes WebGPU, that the proposed package has been generated, or that a browser shader is a compiled Clef program.
 
 For the editor's graph vocabulary and interaction design see [Hypergraph visualization](12_hypergraph_visualization.md). For byte layouts, identities and evidence across the renderer boundary see [Visualization integrity](13_visualization_integrity.md).
 
-## The selected arrangement
+## The browser arrangement
 
 ```text
 CCS/Baker: settle source semantics and graph facts
@@ -67,7 +69,7 @@ The renderer actor/mailbox idea has a specific job: serialize decisions about wh
 
 ## The current host and the bridge
 
-[WrenHello](../../WrenHello/README.md) demonstrates a Linux x86-64 native host using WebKitGTK and a frontend authored with F#/Partas.Solid, compiled through Fable and bundled with Vite. Its existing counter exchanges typed command/event values through a compact ASCII script-message protocol. Its inbound binding preserves the UTF-8 byte count and rejects messages beyond 4,096 bytes before copying. The host and its lifecycle are useful evidence for WREN, while the selected Fickl/Ranvier frontend is the direction to implement and validate.
+[WrenHello](../../WrenHello/README.md) demonstrates a Linux x86-64 native host using WebKitGTK and a frontend authored with F#/Partas.Solid, compiled through Fable and bundled with Vite. Its existing counter exchanges typed command/event values through a compact ASCII script-message protocol. Its inbound binding preserves the UTF-8 byte count and rejects messages beyond 4,096 bytes before copying. The host and its lifecycle are useful evidence for the Fickl/Ranvier browser path. Ranvier Native has a separate application-to-WebCore path.
 
 BAREWire already has shared encoding and decoding, schema and framing components, with .NET, JavaScript and native Clef project paths. Its envelope includes a message kind, correlation identifier and BARE payload, with a length prefix for stream transports and a schema epoch in a Hello frame. The project's recorded gates cover the three compilation paths within their stated snapshots. Its [implementation status](../../BAREWire/docs/Implementation%20Status.md) distinguishes those built components from particular transport and shared-memory integrations.
 
@@ -122,11 +124,21 @@ Windows WebView2, Apple WKWebView and Android WebView each have distinct host AP
 
 WebGPU is a secure-context API. Test the actual embedded URL or custom scheme rather than assuming it is treated as secure. Probe `navigator.gpu`, request an adapter and device, inspect the needed limits and features, validate a shader and render a small scene. Test mobile suspension/resumption, desktop window close/reopen, resize, device loss and a fallback that preserves the visual's essential meaning. Record the exact WebView build and selected GPU where that information is available. [WebGPU specification](https://www.w3.org/TR/webgpu/).
 
-### Native GPU work
+### Native WebGPU and presentation
+
+WebGPU has a native interface as well as its browser JavaScript interface. The multi-vendor [`webgpu.h` C API](https://github.com/webgpu-native/webgpu-headers) maps WebGPU concepts to a native ABI intended for higher-level language bindings. [Dawn](https://github.com/google/dawn) implements native WebGPU over platform GPU APIs; [wgpu-native](https://github.com/gfx-rs/wgpu-native) is another implementation with its own version and extension compatibility to check. A C ABI is a boundary contract: using it from Clef does not require writing the application in C.
+
+For the initial F#/.NET NativeAOT investigation, use a .NET-consumable binding to a pinned native WebGPU implementation. A Farscape-generated Clef binding to the same C ABI is a promising path for a Clef-native application or a separately connected Clef service. Pin the header and implementation together, build a bounded adapter/device/buffer/queue/surface slice, and check callbacks, errors, ownership, resource lifetime and target-specific platform handles. Treat Fidelity.WebGPU as a prospective library family with distinct browser, .NET-native and Clef-native bindings, each with its own conformance evidence. Package boundaries and a common higher-level API can be settled as those slices are exercised.
+
+There are two native integration routes to investigate. Ranvier.WebCore may expose WebCore's own canvas or GPU facilities through its native ABI, subject to that backend's actual coverage. Separately, an application can bind an independent `webgpu.h` implementation such as Dawn and arrange how its output is presented with the WebCore view. The interface owners, devices, resources and presentation evidence differ between these routes.
+
+Ranvier's recorded native application work includes Windows D3D11 shared-frame presentation with CPU-paint fallback. That does not establish that an independent Dawn or wgpu-native surface can be inserted into WebCore's page or share its GPU resources. Investigate native-window composition and explicit texture sharing separately: identify the presenting owner, adapter and device compatibility, frame synchronization, resize and device loss, resource retirement and failure fallback. Keep the WebCore host loop responsive while workers prepare scene data and the GPU executes. [Ranvier native application evidence](../../Ranvier.View/docs/superpowers/specs/2026-10-28-native-app-gaps.md).
+
+### Native GPU work with a browser frontend
 
 Some workloads justify native GPU access: a native simulation may already own its data and compute resources, or a target may need capabilities unavailable to its WebView. The native host can send a bounded result or visualization projection to the frontend through an admitted BAREWire contract. If the visual needs to display a native GPU texture directly, establish a host-specific sharing mechanism, device and adapter compatibility, ownership, synchronization, presentation, security and resource-retirement rules. WebGPU's browser API does not promise that a native allocation is automatically a WebGPU texture.
 
-Native GPU work is a useful comparison path rather than a prerequisite for a WebGPU canvas. The first goal is to prove the frontend path in the actual WebView. Later measurements can decide whether a native computation or shared-texture integration solves a concrete workload problem.
+Native GPU computation can also supply a browser frontend. Measure the complete transfer and presentation path to decide whether a native computation or shared-texture integration solves the selected workload's problem.
 
 ## Clef and JSIR horizon
 

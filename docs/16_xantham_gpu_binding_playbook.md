@@ -1,8 +1,10 @@
 # 16 - Building the D3 and WebGPU Bindings
 
-This playbook takes the WREN visualization work from TypeScript declarations to a Fickl-compiled F# consumer that runs in a browser and the actual WrenHello WebView. It is intended for reusable Fidelity libraries and product applications. Atelier's graph inspector is a demanding first consumer. Financial charts, scientific visualizations and other WREN applications should be able to use the resulting browser bindings without taking a dependency on the editor.
+This playbook covers the **browser deployment track**: TypeScript declarations to a Fickl-compiled F# consumer in a browser or conventional WrenHello WebView. It is intended for reusable Fidelity libraries and product applications. Atelier's graph inspector is a demanding first consumer. Financial charts, scientific visualizations and other WREN applications can use the resulting browser bindings without depending on the editor.
 
-**Selected direction:** use Xantham for the F# binding surface, Fickl for F#-to-JavaScript compilation and Ranvier for reactive frontend state. Package a prospective Fidelity.WebGPU browser binding and keep generated declarations separate from authored layout, lifecycle and integrity helpers. BAREWire carries the shared application data; Farscape and the platform bindings provide native host services. Clef-to-JavaScript through JSIR is a later realization with its own gates.
+For this browser track, use Xantham for the F# binding surface, Fickl for F#-to-JavaScript compilation and Ranvier for reactive frontend state. Package a prospective Fidelity.WebGPU browser binding and keep generated declarations separate from authored layout, lifecycle and integrity helpers. BAREWire carries shared application data across admitted boundaries. Clef-to-JavaScript through JSIR is a later browser realization with its own gates.
+
+Ranvier Native is a separate track: application code reaches WebCore's DOM through native interop without Fickl or a JavaScript application runtime. The TypeScript bindings and D3 runtime described here do not automatically provide native WebCore, D3 or GPU functionality. Use the native ABI and renderer integration appropriate to that backend, and compare the resulting behavior against the same visual and integrity contracts.
 
 This is an implementation guide, not a report that WebGPU generation, browser execution or WrenHello integration already passes. Confirm the checked-out tool versions and the current owning documentation before running a generation or release gate.
 

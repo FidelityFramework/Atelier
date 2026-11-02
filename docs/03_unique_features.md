@@ -4,7 +4,7 @@
 
 VSCode and NeoVim are general-purpose editors. They excel at breadth but cannot provide depth for specialized domains. Atelier, designed specifically for the Fidelity ecosystem, aspires to offer capabilities that general editors fundamentally cannot.
 
-**Status.** Every feature below is a reader of facts the Program Semantic Graph (PSG) carries. CCS builds and saturates the graph; Composer's Alex witnesses it into MLIR; Lattice (ClefAutoComplete with the lattice-vscode and lattice-vim clients) witnesses it into the editor; Atelier witnesses it into views. Nothing downstream computes a semantic fact. Where a pane wants a fact the graph does not carry today, this document says so and names it as a CCS or Composer contract item (the host surface is tabulated in clef's `Lattice_Consumer_Contract.md` §3). Two facts gate all of it: CCS exports the graph only as JSON phase artifacts today (no stable, BAREWire-described export), and Lattice today reads the F# Compiler Service typed tree rather than the PSG. No pane here can witness the graph until the export and the ClefAutoComplete migration exist.
+Every feature below reads facts the Program Semantic Graph (PSG) carries. CCS builds and saturates the graph; Composer's Alex witnesses it into MLIR; Lattice and Atelier are designed to present its facts in editor views. The authoritative construct is the BAREWire-generated binary PSG. JSON nanopass and final-graph outputs are inspection projections. Atelier's integration will connect its panes to the relevant graph revisions and service interfaces. Lattice's migration from its F# Compiler Service baseline determines which PSG-native editor facts it can provide.
 
 ## Feature 1: Delimited Continuation Debugging
 
@@ -193,10 +193,10 @@ flowchart TB
 
 ### D3-Based Rendering
 
-[D3.js](https://d3js.org/) provides the visualization engine. The viewer schema would be generated from CCS's `SemanticGraph/Types.fs` (or from the phase artifact), never hand-maintained, so hyperedge arity, obligation nodes, and residence are first-class in the pane. What feeds it today is the JSON phase artifacts; a stable, BAREWire-described graph export is a CCS contract item.
+[D3.js](https://d3js.org/) supplies layout and visualization tools. The viewer consumes an admitted projection of the authoritative BAREWire PSG, retaining hyperedge arity, obligation nodes and residence as first-class facts. JSON phase artifacts support nanopass inspection. Their illustrative shape is useful for a sketch, while the graph's generated contract remains the source for the consumer's actual data types.
 
 ```typescript
-// Generated from Types.fs; shown here for shape.
+// Illustrative view shape; use the generated graph contract in an implementation.
 interface PSGNode {
   id: string
   kind: string                          // SemanticKind
@@ -425,7 +425,7 @@ Atelier's unique features would arise from reading the PSG, the sole semantic au
 | Feature | Enabled By | Four Pillars Connection |
 |---------|-----------|------------------------|
 | Continuation debugging | the suspension recipe's frame node in the PSG (discriminant, live-across slots, delimiter edge) and a debug adapter that reads process memory at the graph's offsets | the frame is the closure environment node in its second instance |
-| PSG visualization | CCS's phase and diff artifacts today; a stable BAREWire-described graph export (a CCS contract item) | Zipper traversal is observable |
+| PSG visualization | The BAREWire PSG, with phase and diff projections for inspection | Zipper traversal is observable |
 | Pipeline inspection | node provenance on every witnessed op, preserved through the pathway (a Composer contract item; only obligation anchors are reified today) | Templates show MLIR patterns |
 | Coeffect awareness | `ArenaAffinity`, `Resides`, `Constrains`, `Cleanup`, obligation nodes; diagnostics authored by CCS | Mise-en-place visible in graph |
 
@@ -433,7 +433,7 @@ These capabilities would be difficult or impossible in general-purpose editors b
 
 ### The Self-Hosting Advantage
 
-Atelier's native host is compiled by Composer, so improvements to the native backend and to the graph export reach the IDE directly: when a new saturation rule lands in CCS, the viewer can show it; when the graph carries a new coeffect, the panes render it. That loop is a claim about the native host and the PSG export, not about the UI. The front end is F# through Fable today, a .NET dependency, and interim; whether the front end can be Clef is not decided here.
+Atelier's native host is intended to be compiled by Composer. As its graph integration develops, a new saturation rule or coeffect can become visible in the viewer through the published PSG. Ranvier Native provides a native F# and WebCore frontend path to investigate. WrenHello's Fable frontend is an earlier baseline, Fickl serves the separate browser path, and Clef frontend compilation is a further target.
 
 ## Navigation
 
