@@ -286,7 +286,7 @@ For a 10,000-line file with a single character edit, incremental parsing typical
 
 ## Navigation
 
-- Previous: [06_partas_solid.md](./06_partas_solid.md): Partas.Solid, F# to SolidJS compilation
+- Previous: [06_reactive_frontend.md](./06_reactive_frontend.md): Fickl and Ranvier frontend architecture
 - Next: [08_tooling_integration.md](./08_tooling_integration.md): Performance Tooling Integration
 
 ## References

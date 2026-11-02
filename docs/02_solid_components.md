@@ -1,13 +1,15 @@
 # 02 - Solid Components: CodeMirror and Dockview
 
+**Frontend direction:** WREN standardizes on Fickl and Ranvier for F#-to-JavaScript work. The SolidJS and Partas.Solid material below records an earlier design, rather than the selected frontend stack. See the [reactive frontend](06_reactive_frontend.md).
+
 ## Overview
 
-Atelier's frontend is planned to be built on two remarkable SolidJS libraries:
+The earlier frontend design considered two SolidJS libraries:
 
 - **solid-codemirror**: CodeMirror 6 wrapper with reactive integration
 - **solid-dockview**: VS Code-style docking panel system
 
-Both integrate seamlessly with SolidJS's fine-grained reactivity model and would be exposed to the front end through Partas.Solid bindings. Today that front end is F# through Fable, a .NET SDK dependency, and interim; whether Composer's JSIR pathway takes on a Solid-style reactive surface so the front end can be Clef is an open decision (see 06).
+These components integrate with SolidJS. The examples below preserve the earlier Partas.Solid/Fable approach as a historical reference; the current Fickl and Ranvier frontend will select its editor and docking integrations separately.
 
 ## CodeMirror 6: The Editor Foundation
 
@@ -461,12 +463,12 @@ While DaisyUI doesn't provide docking panels (that's Dockview's job), it provide
 
 ## Summary
 
-The combination of solid-codemirror and solid-dockview would provide:
+The earlier solid-codemirror and solid-dockview design explored:
 
 1. **Professional editor**: CodeMirror 6 with CAC as its one source of semantic facts
 2. **Flexible layout**: VS Code-style docking with floating/popout windows
 3. **SolidJS integration**: Fine-grained reactivity, components run once
-4. **Typed bindings**: Partas.Solid through Fable today (interim; a .NET SDK dependency), Clef declarations through Composer's JSIR pathway if that decision lands
+4. **Typed bindings**: Partas.Solid through Fable in the earlier approach; the selected Fickl/Ranvier frontend needs its own editor-component bindings and integration checks
 
 This foundation aims to enable Atelier to rival VSCode's UX while maintaining the lean WREN Stack architecture.
 

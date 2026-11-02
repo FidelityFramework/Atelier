@@ -1,5 +1,7 @@
 # 00 - WREN Architecture
 
+**Frontend direction:** WREN's F#-to-JavaScript path standardizes on Fickl and Ranvier. The SolidJS and Fable examples in this chapter record the earlier design and WrenHello baseline; a retained view toolkit requires an adapter to the selected reactive contract. Clef's JSIR frontend remains a later implementation target. The [visualization strategy](05_webgpu.md) sets the initial integration and measurement gates.
+
 ## The WREN Stack
 
 **W**ebView + **R**eactive + **E**mbedded + **N**ative
@@ -126,11 +128,13 @@ BAREWire aims to provide:
 - Compile-time type checking
 - Minimal wire format
 
-BAREWire IPC is design today (BAREWire's implementation status lists IPC as design; WrenHello uses an interim script-message channel). A second boundary sits behind the host: CCS and CAC are .NET processes, so the host reaches CAC as a child process over standard LSP and reads the artifact files CCS and Composer write beside a build. Neither channel is BAREWire, no host-facing API exposes the graph, and a serialization contract for a non-.NET consumer of the PSG is a CCS-owned contract item.
+BAREWire already supplies shared encoding, decoding, schema and framing foundations across its .NET, JavaScript and native Clef paths. WrenHello's current integrated example uses a bounded script-message channel; connecting the chosen BAREWire protocol and transport to that application remains an integration step. The specific framing, lifecycle and transport must be established for each host. See [WREN bindings and integration](14_wren_webgpu_bindings.md).
 
-### Layer 4: Reactive Frontend (SolidJS)
+A second boundary sits behind the host: CCS and CAC are .NET processes, so the host reaches CAC as a child process over standard LSP and reads the artifact files CCS and Composer write beside a build. Neither channel is BAREWire, no host-facing API exposes the graph, and a serialization contract for a non-.NET consumer of the PSG is a CCS-owned contract item.
 
-The WebView is designed to run a SolidJS application with fine-grained reactivity. Today the application is authored in F# with Partas.Solid and compiled by Fable, a .NET dependency, interim; whether Composer's JSIR pathway will carry a Solid-style reactive surface so this layer can be Clef is undecided. The reactive model itself is the same either way:
+### Layer 4: Reactive Frontend
+
+The selected F#-to-JavaScript path uses Fickl and Ranvier. WrenHello's existing Partas.Solid/Fable implementation supplies a baseline, and any Solid-based controls need an adapter to Ranvier's state and lifecycle contract. The following SolidJS example illustrates that earlier implementation, rather than specifying Ranvier behavior:
 
 ```typescript
 // SolidJS - components run ONCE, only signals update
@@ -160,13 +164,13 @@ For an editor that anticipates thousands of updates per second (keystrokes, LSP 
 ```mermaid
 flowchart TB
     action["User Action<br/>(keystroke, click, etc.)"]
-    signal1["SolidJS Signal<br/>(Frontend state update)"]
+    signal1["Ranvier state<br/>(Frontend update)"]
     encode1["BAREWire Encode<br/>(Serialize to binary)"]
     scriptmsg["Script Message<br/>(WebView → Native)"]
     native["Native Host<br/>(LSP client, artifact reader, runtime reader)"]
     encode2["BAREWire Encode<br/>(Serialize response)"]
     execscript["Execute Script<br/>(Native → WebView)"]
-    signal2["SolidJS Signal<br/>(Frontend state update)"]
+    signal2["Ranvier state<br/>(Frontend update)"]
 
     action --> signal1 --> encode1 --> scriptmsg --> native --> encode2 --> execscript --> signal2
 ```

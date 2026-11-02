@@ -1,32 +1,35 @@
 # 06 - The Reference Model
 
-Atelier's knowledge layer includes a language model. We envision a small specialist whose weights carry familiarity with the corpus and whose authority is held entirely in the graph, an inversion of the usual retrieval-augmented arrangement, where a large generalist gets a search index bolted on. The pairing has a published skeleton in [our constrained machine learning series](https://clef-lang.com/docs/design/constrained-machine-learning/managing-context/): a recurrent model suspends mid-inference, emits a structured query to a domain-specific actor, and integrates the answer as state. The response crosses [BAREWire](https://clef-lang.com/blog/getting-the-signal-with-barewire/) as a `StructuredFact` carrying Value, Dimension, Confidence, and Certificate fields, with its structure intact rather than flattened through the tokenization path. The design pattern is the Adaptive Domain Model of [our pre-print](https://arxiv.org/abs/2603.18104), and the reference model is its most natural first instance, an ADM whose domain is the Fidelity corpus itself. The system that explains the stack would be an application of the stack's own published architecture.
+Atelier should provide a local reference assistant that helps developers navigate the Fidelity corpus and the current solution. Its first responsibility is to retrieve relevant sources, identify their revisions and status, and explain the evidence in context. A small specialist model is a promising way to make that experience fast and accessible. Its size, architecture, training, and resource requirements remain choices to validate.
 
-## The Division of Labor
+The broader design draws on the [constrained machine learning series](https://clef-lang.com/docs/design/constrained-machine-learning/managing-context/) and the [Adaptive Domain Model paper](https://arxiv.org/abs/2603.18104). In that research direction a model can request structured information from a domain actor. A `StructuredFact` may include a value, dimension, confidence, and certificate. BAREWire could carry such a contract between Fidelity components once both endpoints implement it. Integrating structured facts directly into a model's internal state requires model and runtime work beyond serialization and is a separate research milestone.
 
-The division is strict because each side is unreliable at the other's job. Fine-tuning moves register and vocabulary dependably and moves factual recall undependably, so the fine-tune targets fluency in the house vocabulary, familiarity with the corpus's shape, and the practice of consulting before asserting. Facts arrive by retrieval with certificates, the anchor chains of [document 03](03_weave.md), and the synthesis contract rejects uncited claims structurally. This is the framework's standing guarantee discipline applied to the model's own output: confidence attaches to the deterministic side, where the graph either resolves an anchor or does not, and the model narrates over retrieved ground truth.
+## Retrieval, Judgment, and Provenance
 
-The corpus's stratification becomes policy at three points. In the graph, strata ride as node metadata with the pre-prints at the apex of the authority ordering. In training data, the apex weighs heavier, since an unweighted dump would teach the model the drift of older strata along with the doctrine. In synthesis, when strata disagree the answer cites the apex, which mechanizes the editorial reconciliation practice the corpus already follows. A fine-tune bakes a snapshot into the weights while the corpus re-levels, so everything that changes belongs in the graph, and the fine-tune stays small and cheaply re-runnable, retrained as routinely as the index rebuilds.
+The graph and retrieval service should locate evidence. The assistant should synthesize it, cite the relevant anchors, and state uncertainty or conflicting evidence. A certificate can identify a source, revision, location, and relationship to a claim. Checking that an anchor exists does not establish that the claim follows from it. Evaluation and, where possible, explicit checks of the cited proposition remain necessary.
+
+Source status matters. Published papers, language specifications, current implementation, design notes, and historical articles answer different questions. A newer implementation may supersede a design note, while a paper may describe a theoretical result that implementation has not yet realized. The reference model should show dates, revisions, and stated scope when sources disagree. It should surface unresolved conflicts for review instead of applying a fixed rule that always places one document class above another.
+
+Fine-tuning may improve vocabulary and query habits. Treat its factual recall as a hypothesis to evaluate and keep changing project facts in retrievable, revision-bound sources. The [weave](03_weave.md) supplies the proposed link and provenance model. Its authored and proposed relationships need distinct labels in answers.
 
 ```mermaid
 flowchart LR
-    subgraph model["Reference model (ternary, CPU-resident)"]
-        rec["recurrence"]
-    end
-    subgraph actor["Graph actor (the ADM)"]
-        general["general graph + weave"]
-        strata["authority ordering"]
-    end
-    rec -- "structured query" --> actor
-    actor -- "StructuredFact:<br/>Value, Dimension,<br/>Confidence, Certificate" --> rec
+    model["Reference assistant"]
+    actor["Graph and retrieval services"]
+    sources["Versioned source evidence"]
+    model -- "query" --> actor
+    actor --> sources
+    actor -- "facts and provenance" --> model
 ```
 
-## Coverage as a Measurement
+## Measure Coverage and Quality
 
-Our target is a high-confidence reference with auditable blind spots, and the auditability comes from a property generic assistants lack: the reference set is closed and enumerable. Every spec clause, numbered definition, and coeffect category can have probe questions generated from the graph itself, so blind-spot detection becomes a coverage report with failing rows. The harness can exist before the model does, baselining the retrieval-plus-generalist synthesis the site already runs, which gives the eventual fine-tune a measured target rather than an assumed one.
+Build the evaluation harness before choosing a model. Generate probes from available specification clauses, definitions, and compiler facts, then add questions written by developers to test interpretation and practical use. Report missing coverage, retrieval quality, citation accuracy, whether evidence supports each answer, and the model's behavior when the answer is unknown. The reference corpus is versioned and enumerable only within the scope of an identified snapshot. Coverage of that snapshot is useful evidence, not a proof that answers are correct.
 
-One probe category is specific to this corpus and easy to miss. Every base model arrives knowing mainstream F# and .NET semantics, and much of that knowledge is almost right about Clef in ways that are precisely wrong: representation of discriminated unions, byref behavior, the deliberate absence of runtime reflection. The eval harness therefore includes adversarial probes at exactly the collision points where the plausible generic answer and the Clef answer diverge, because the failure mode there is confident substitution rather than absence, and a coverage report over anchors would never surface it.
+Include adversarial probes where familiar F# or .NET expectations can be mistakenly substituted for Clef semantics. Test questions about representations, references, evaluation strategy, and reflection against the applicable specification and current implementation, with discrepancies reported explicitly.
 
-## The Ternary Fit
+## Local Model Target
 
-The task profile sits well within what small ternary-weight models demonstrate: house-vocabulary fluency, query emission, faithful synthesis under a citation contract. Traversal and closure run in the graph actor regardless. The [λ-RLM results](https://arxiv.org/abs/2603.20105) our context-management entry cites point the same direction, with structural control around bounded neural subproblems outperforming unstructured recursion. CPU residency compounds in practice: the reference model sits beside Atelier on the developer's machine, always warm. It requires no accelerator and no API dependency, and it works offline. A workshop whose reference authority required a cloud subscription would undercut the computational-responsibility argument the [WREN stack](https://clef-lang.com/blog/wren-stack/) makes. A low-wattage specialist consulting a resident graph keeps that argument intact, and when the constrained-model line compiles through Composer natively, the reference model becomes a demonstration artifact of the very series that describes its design.
+A CPU-resident model that works offline is an attractive goal for a WREN application. Evaluate ternary and other compact models against the same tasks and report memory, startup time, latency, power, citation fidelity, and answer quality on representative machines. Include retrieval-plus-generalist baselines. A model earns the reference role when it meets those measured requirements and can decline questions it cannot support.
+
+Direct structured-state integration and native model compilation through Composer remain longer-term experiments. They could make the reference assistant a compelling demonstration of the framework once their runtime and verification contracts are implemented.

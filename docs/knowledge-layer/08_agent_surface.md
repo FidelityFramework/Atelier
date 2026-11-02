@@ -1,42 +1,31 @@
 # 08 - The Observation Surface
 
-[Opining Upon Reflection](https://clef-lang.com/blog/opining-upon-reflection/) makes the argument this document extends: runtime reflection exists because compilers discard what they know, and Clef's alternative is one observation surface over the saturated PSG serving every consumer. The essay enumerates four witnesses: the Alex traversal emitting MLIR, the metaprogram, Lattice answering editor queries, and the Atelier pane rendering views. A hover card and a lowered op are the same kind of thing in that architecture, projections of one graph.
+Atelier should give developers and agents access to the same revision-bound compiler evidence. [Opining Upon Reflection](https://clef-lang.com/blog/opining-upon-reflection/) describes a saturated PSG observed by compiler and tooling consumers. A hover, a visualization, and an agent query can draw on that shared source while presenting different information for their audiences.
 
-An agent consuming the knowledge layer adds no witness to that list. It reads the same projections the Atelier pane renders, and what varies per consumer is only the formatter at the rim: a pane renders pixels, an agent path assembles context. The design constraints the reflection essay establishes carry over whole. Witnesses never compute, computation is edit-driven and observation is free, and the projection layer keeps every observation answerable between keystrokes. The tool ecosystem arrived at the same discipline from the economics side, index once and query many: the architecture we derived from first principles is the one the agent-tool market independently found necessary.
+CCS and Baker settle source semantics and publish facts in the PSG. Alex composes over settled facts. Lattice and Atelier can project or query those facts for their consumers without repairing semantics in the reader. Queries, indexing, rendering, and context assembly still have costs. Measure them against interactive latency targets and cache results where appropriate.
 
-## The Contract Is Already Ours
+## Native Access and External Tools
 
-The question of how an agent reaches the graph has a conventional answer, the Model Context Protocol, and a native one, and the design distinguishes them by who owns the endpoints.
+Use a typed BAREWire contract for structured exchanges between Fidelity components where it fits the boundary. BAREWire's existing serialization and contract work provide a useful foundation. A graph query API, snapshot semantics, query authorization, and the particular messages for the knowledge layer require their own implementation. The proposed reference assistant in [document 06](06_reference_model.md) can consume that API alongside other Atelier features.
 
-MCP is a federation protocol: a discovery handshake plus JSON-RPC so arbitrary harnesses can reach arbitrary tools without bespoke integration. Its serialization is stringly typed JSON, which means nothing dimensional survives the crossing, and the harness re-flattens every result into prompt text regardless. Ecosystems adopt it because they lack a shared typed contract between tool and agent. This stack has one. [BAREWire](https://clef-lang.com/blog/getting-the-signal-with-barewire/) is the boundary contract both sides interpret by construction, and [our context-management design](https://clef-lang.com/docs/design/constrained-machine-learning/managing-context/) already specifies the strong form of the crossing: a `StructuredFact` arriving with its dimensional annotations intact, bypassing the tokenization path that would flatten its structure. Between two Fidelity components, interposing MCP would trade a compile-time contract for a stringly one.
+For external tools, provide an MCP adapter when there is a concrete integration to support. MCP uses JSON-RPC and can convey structured content and schemas. The data actually presented to a model depends on the host and its integration. The adapter should preserve revision, provenance, and type information in its responses and make any conversion visible. Other integrations can use their appropriate protocols.
 
-The resolution sorts by horizon:
-
-- **Commodity harnesses, today.** External agent products speak MCP and nothing else. Reaching them would take a thin adapter over projection snapshots: disposable plumbing at the rim, entirely optional. Nothing in the architecture depends on its existence. The snapshots presume a queryable projection API with snapshot semantics beyond hover and diagnostics, which Lattice (the ClefAutoComplete server, CAC) does not carry today; that API is a Lattice-owned contract item and the adapter waits on it.
-- **Atelier-native.** Both ends are ours. The graph actor would answer a structured query over BAREWire, and Atelier's agent path would assemble context for whatever model is in play, with no protocol hop. This is the design center, and the reference model of [document 06](06_reference_model.md) is its resident consumer.
-- **The designed far end.** The porous recurrence of the constrained-model series, where structured facts enter inference as state rather than as tokens, and the oracle-memory direction [the refinery essay](https://clef-lang.com/blog/fidelity-as-ai-refinery/) sketches at research stage. No protocol in the current landscape addresses that horizon. It is ours to build.
+The constrained-model research explores a further step: incorporating structured facts into model state rather than presenting them as ordinary prompt text. That depends on the model and runtime, not just the wire format. It deserves its own experiments and acceptance criteria.
 
 ```mermaid
 flowchart TB
-    psg["Saturated PSG<br/>(CCS; the sole semantic authority)"]
-    proj["PSG projections<br/>(exact compiler facts; witnessed by Lattice / CAC)"]
-    kl["Knowledge layer<br/>(Atelier: weave + ledger; derived, cites PSG projections)"]
-    psg --> proj
-    proj --> kl
-
-    pane["Atelier pane<br/>(renders)"]
-    agentpath["Agent path<br/>(assembles context)"]
-    adapter["MCP adapter<br/>(rim, optional)"]
-
-    proj --> pane
-    kl --> pane
-    proj --> agentpath
-    kl --> agentpath
-    agentpath --> adapter
+    psg["Published PSG revision"] --> projection["Revision-bound query and projection"]
+    projection --> pane["Atelier views"]
+    projection --> knowledge["Knowledge layer: weave and ledger"]
+    knowledge --> agent["Agent context"]
+    projection --> agent
+    agent --> adapter["Optional external-tool adapter"]
 ```
 
-Two sources feed the surface, and they carry different warrant. A PSG projection is a compiler fact, minted by CCS and read through Lattice. A weave edge is editorial data, `Authored` or `Proposed` ([03](03_weave.md)), and a ledger delta is computed history ([04](04_temporal_ledger.md)); both are derived over PSG projections and neither is a graph fact. Every certificate the agent path assembles names which side each fact came from, so a `Proposed` alignment or a ledger inference can never be cited with the warrant of an elaboration result.
+Lattice provides editor-facing capabilities. The knowledge layer extends that interface with queryable projections and explicit snapshot semantics, coordinated with the compiler and tooling owners.
 
-## Answers That Carry Their Warrant
+## Answers With Traceable Evidence
 
-What the agent path is designed to deliver, and a structure-only tool cannot, is the certificate. A query through the weave would return its answer with the anchor chain attached: the spec clause, the docs walk, the pre-print section, and the side each fact came from. Through the temporal ledger it would also carry the trajectory that produced the current state. An agent operating on this surface cites rather than reconstructs, and its mission context, the predicates of [document 05](05_missions.md), gives it a checkable objective whose progress is measured on ground truth. The long-horizon benchmarks show agents collapsing when the repository is opaque text and the goal is a vibe. This surface is designed to be the opposite of that condition, and this sub-folder designs the knowledge layer for exactly that purpose; none of it is built yet.
+An answer should identify the revision and distinguish three kinds of evidence: compiler facts from the published PSG, authored or proposed relationships in the [weave](03_weave.md), and historical changes calculated by the [ledger](04_temporal_ledger.md). Each has its own source and validity conditions. A proposed alignment should remain labeled as a proposal, and a historical comparison should identify the revisions and fields compared.
+
+The agent interface returns anchors and provenance with each answer where available. This makes a claim reviewable and helps the user find the underlying specification, paper, source, or graph fact. A citation demonstrates where to look; confirming that the source supports the claim still requires checking.
