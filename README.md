@@ -22,7 +22,7 @@ Atelier follows the [WREN Stack](https://speakez.tech/blog/wren-stack/) (**W**eb
 WrenHello provides a reference for the host and its communication bridge. See the [reactive frontend design](docs/06_reactive_frontend.md) for more detail.
 
 ```mermaid
-flowchart TB
+flowchart TD
     subgraph atelier["Atelier views"]
         editor["Editor and diagnostics"]
         repl["REPL and HMR"]
