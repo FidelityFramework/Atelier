@@ -23,28 +23,19 @@ WrenHello provides a reference for the host and its communication bridge. See th
 
 ```mermaid
 flowchart TD
-    subgraph atelier["Atelier views"]
-        editor["Editor and diagnostics"]
-        repl["REPL and HMR"]
-        psg_view["PSG and compilation views"]
-        debug["Debugger and tools"]
-    end
-
-    native["Native views: Ranvier → WebCore"]
-
-    subgraph services["Compiler and runtime services"]
-        cac["ClefAutoComplete · LSP"]
-        ccs["Clef Compiler Service"]
-        composer["Composer"]
-        runtime["Application runtime"]
-    end
-
-    editor & repl & psg_view & debug --> native
+    editor["Editor and diagnostics<br/>Ranvier · WebCore"]
+    repl["REPL and HMR<br/>Ranvier · WebCore"]
+    psg_view["PSG and compilation views"]
+    debug["Debugger and tools"]
+    cac["ClefAutoComplete · LSP"]
+    ccs["Clef Compiler Service"]
+    composer["Composer"]
+    runtime["Application runtime"]
     editor <-->|"Edits and diagnostics"| cac
-    repl -.->|"Interactive evaluation and updates"| runtime
     cac --> ccs
-    ccs -->|"PSG, resolution and obligations"| psg_view
+    ccs -->|"PSG and obligations"| psg_view
     composer -->|"Build artifacts"| psg_view
+    repl <-.->|"Evaluation and updates"| runtime
     runtime -->|"Runtime information"| debug
 ```
 
