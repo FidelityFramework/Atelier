@@ -26,7 +26,7 @@ flowchart TB
     subgraph atelier["Atelier views"]
         editor["Editor and diagnostics"]
         repl["REPL and HMR"]
-        graph["PSG and compilation views"]
+        psg_view["PSG and compilation views"]
         debug["Debugger and tools"]
     end
 
@@ -39,12 +39,12 @@ flowchart TB
         runtime["Application runtime"]
     end
 
-    editor & repl & graph & debug --> native
+    editor & repl & psg_view & debug --> native
     editor <-->|"Edits and diagnostics"| cac
     repl -.->|"Interactive evaluation and updates"| runtime
     cac --> ccs
-    ccs -->|"PSG, resolution and obligations"| graph
-    composer -->|"Build artifacts"| graph
+    ccs -->|"PSG, resolution and obligations"| psg_view
+    composer -->|"Build artifacts"| psg_view
     runtime -->|"Runtime information"| debug
 ```
 
