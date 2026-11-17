@@ -50,7 +50,7 @@ The diagram shows the intended flow. The native views, service connections and d
 - **Delimited continuation debugging:** Inspect suspension, frames and control flow using graph and layout information from the compiler. This depends on compiler and runtime support that is still to come.
 - **Visualization and tooling:** Explore coordinated views for editing, graphs, debugging and terminals. Measure responsiveness and resource costs on each host, including comparisons with native editors such as Zed.
 
-CodeMirror, Dockview, D3.js and xterm.js are candidates from earlier designs. Using them with native WebCore views would require integration work or shared implementations. BAREWire is planned for typed communication between components; each integration still needs a defined delivery and lifetime contract.
+CodeMirror, Dockview, D3.js and xterm.js are candidates from earlier designs. Using them with native WebCore views would require integration work or shared implementations. BAREWire is planned for unboxed data exchange between components; each integration still needs a defined delivery and lifetime contract.
 
 ## Documentation
 
@@ -68,7 +68,7 @@ These documents cover the design in more detail. Some describe earlier frontend 
 - [Fickl](https://github.com/shayanhabibi/fickl) — the selected compiler where JavaScript is needed.
 - [Composer](https://github.com/FidelityFramework/Composer) — Clef AOT compiler; Alex witnesses the PSG into MLIR.
 - [ClefAutoComplete](https://github.com/FidelityFramework/ClefAutoComplete) — the Clef language server.
-- [BAREWire](https://github.com/FidelityFramework/BAREWire) — schema-driven binary serialization and platform description.
+- [BAREWire](https://github.com/FidelityFramework/BAREWire) — unboxed data on the wire, with schema and platform descriptions.
 - [Fidelity.WebKit](https://github.com/FidelityFramework/Fidelity.WebKit) — generated bindings for platform WebView integration.
 
 ## License
